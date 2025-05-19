@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,16 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Quantum theme colors
+				quantum: {
+					bg: '#1a1b2e',
+					surface: '#22233a',
+					light: '#2c2d46',
+					accent: '#8B5CF6',
+					highlight: '#9b87f5',
+					muted: '#4c4d6e',
+					glow: '#c4b5fd'
 				}
 			},
 			borderRadius: {
@@ -84,11 +95,32 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse-glow': {
+					'0%, 100%': {
+						boxShadow: '0 0 8px 2px rgba(139, 92, 246, 0.2)'
+					},
+					'50%': {
+						boxShadow: '0 0 16px 4px rgba(139, 92, 246, 0.4)'
+					}
+				},
+				'quantum-wave': {
+					'0%': { transform: 'scaleY(0.8) translateX(0)' },
+					'50%': { transform: 'scaleY(1.2) translateX(-10px)' },
+					'100%': { transform: 'scaleY(0.8) translateX(-20px)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-glow': 'pulse-glow 2s infinite',
+				'quantum-wave': 'quantum-wave 5s ease-in-out infinite'
+			},
+			boxShadow: {
+				'neumorph-flat': '5px 5px 10px #141525, -5px -5px 10px #262b4d',
+				'neumorph-pressed': 'inset 5px 5px 10px #141525, inset -5px -5px 10px #262b4d',
+				'neumorph-glow': '0 0 15px rgba(139, 92, 246, 0.5)',
+				'quantum-glow': '0 0 20px rgba(155, 135, 245, 0.6)'
 			}
 		}
 	},

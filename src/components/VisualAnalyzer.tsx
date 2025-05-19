@@ -1,0 +1,236 @@
+
+import { useEffect, useRef } from "react";
+
+interface VisualAnalyzerProps {
+  audioContext?: AudioContext;
+  analyserNode?: AnalyserNode;
+  type?: "waveform" | "frequency" | "quantum";
+  color?: string;
+  backgroundColor?: string;
+  className?: string;
+}
+
+const VisualAnalyzer = ({
+  audioContext,
+  analyserNode,
+  type = "waveform",
+  color = "#9b87f5",
+  backgroundColor = "#1a1b2e",
+  className = "",
+}: VisualAnalyzerProps) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const resize = () => {
+      canvas.width = canvas.clientWidth * window.devicePixelRatio;
+      canvas.height = canvas.clientHeight * window.devicePixelRatio;
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    };
+
+    resize();
+    window.addEventListener("resize", resize);
+
+    const simulateQuantumData = () => {
+      const data = new Uint8Array(128);
+      const time = Date.now() / 1000;
+      
+      for (let i = 0; i < data.length; i++) {
+        // Simulate quantum interference patterns with sine waves of different frequencies
+        const x = i / data.length;
+        const wave1 = Math.sin(x * 5 + time) * 0.5;
+        const wave2 = Math.sin(x * 17 + time * 1.3) * 0.3;
+        const wave3 = Math.sin(x * 31 + time * 0.7) * 0.2;
+        const wave4 = Math.sin(x * 67 + time * 1.9) * 0.1;
+        data[i] = ((wave1 + wave2 + wave3 + wave4) * 0.5 + 0.5) * 255;
+      }
+      
+      return data;
+    };
+
+    const drawSimulation = () => {
+      if (!ctx || !canvas) return;
+      
+      // Get dimensions
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      
+      // Clear canvas
+      ctx.fillStyle = backgroundColor;
+      ctx.fillRect(0, 0, width, height);
+
+      if (type === "waveform") {
+        // Simulate waveform data
+        const data = simulateQuantumData();
+        
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        
+        const sliceWidth = width / data.length;
+        let x = 0;
+        
+        for (let i = 0; i < data.length; i++) {
+          const y = height - (data[i] / 255.0) * height;
+          
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+          
+          x += sliceWidth;
+        }
+        
+        ctx.stroke();
+        
+        // Add glow effect
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = color;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      } else if (type === "frequency") {
+        // Simulate frequency data
+        const data = simulateQuantumData();
+        
+        const barWidth = width / data.length;
+        
+        for (let i = 0; i < data.length; i++) {
+          const barHeight = (data[i] / 255) * height;
+          
+          // Create gradient
+          const gradient = ctx.createLinearGradient(0, height, 0, height - barHeight);
+          gradient.addColorStop(0, color);
+          gradient.addColorStop(1, 'rgba(155, 135, 245, 0.2)');
+          
+          ctx.fillStyle = gradient;
+          ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
+        }
+      } else if (type === "quantum") {
+        // Simulate quantum interference pattern
+        ctx.fillStyle = backgroundColor;
+        ctx.fillRect(0, 0, width, height);
+        
+        // Quantum grid
+        ctx.strokeStyle = "rgba(155, 135, 245, 0.1)";
+        ctx.lineWidth = 0.5;
+        
+        const gridSize = 20;
+        
+        // Vertical lines
+        for (let x = 0; x <= width; x += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, height);
+          ctx.stroke();
+        }
+        
+        // Horizontal lines
+        for (let y = 0; y <= height; y += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(width, y);
+          ctx.stroke();
+        }
+        
+        // Draw quantum probability wave
+        const time = Date.now() / 1000;
+        const waveCount = 3;
+        
+        for (let wave = 0; wave < waveCount; wave++) {
+          const hue = (wave / waveCount) * 60 + 260; // Range from purple to blue
+          ctx.strokeStyle = `hsla(${hue}, 80%, 70%, 0.6)`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          
+          const frequency = 5 + wave * 3;
+          const speed = 1 + wave * 0.5;
+          const amplitude = 0.3 - wave * 0.05;
+          
+          for (let x = 0; x < width; x++) {
+            const normalizedX = x / width;
+            
+            // Quantum wave formula with interference
+            const y = height * 0.5 + 
+                     Math.sin(normalizedX * frequency + time * speed) * height * amplitude + 
+                     Math.sin(normalizedX * frequency * 2.1 + time * speed * 1.3) * height * amplitude * 0.5;
+            
+            if (x === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          }
+          
+          ctx.stroke();
+          
+          // Glow effect
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = `hsla(${hue}, 80%, 70%, 0.6)`;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        }
+        
+        // Add quantum particles
+        const particleCount = 15;
+        for (let i = 0; i < particleCount; i++) {
+          const x = width * 0.1 + (width * 0.8 * i / particleCount);
+          
+          // Particle follows the wave
+          const normalizedX = x / width;
+          const frequency = 5;
+          const y = height * 0.5 + 
+                   Math.sin(normalizedX * frequency + time) * height * 0.3;
+          
+          // Draw quantum particle
+          const radius = 3 + Math.sin(time * 3 + i) * 1.5;
+          const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+          gradient.addColorStop(0, 'rgba(196, 181, 253, 1)');
+          gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
+          
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      
+      rafRef.current = requestAnimationFrame(drawSimulation);
+    };
+
+    const animate = () => {
+      if (!analyserNode || !audioContext) {
+        drawSimulation();
+        return;
+      }
+      
+      // Real audio visualization would go here if we had audio nodes
+      // For now, use the simulation
+      drawSimulation();
+    };
+
+    animate();
+
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+      window.removeEventListener("resize", resize);
+    };
+  }, [audioContext, analyserNode, type, color, backgroundColor]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className={`w-full h-full ${className}`}
+    />
+  );
+};
+
+export default VisualAnalyzer;
