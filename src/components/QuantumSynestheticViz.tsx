@@ -202,11 +202,13 @@ const QuantumSynestheticViz: React.FC<QuantumSynestheticVizProps> = ({
     setCurrentState(DEFAULT_STATE);
   };
 
-  // KEY CHANGE: Dynamically determine visualization type based on probabilities
-  const visualizerType = (
-    currentState.probabilities && 
-    Object.keys(currentState.probabilities).length > 0
-  ) ? "qpixl" : "quantum";
+  // KEY CHANGE: Explicitly cast the visualizerType to the expected union type
+  const hasQpixlData = currentState.probabilities && 
+                      Object.keys(currentState.probabilities).length > 0;
+  
+  const visualizerType = hasQpixlData 
+    ? "qpixl" as const
+    : "quantum" as const;
 
   // Convert quantum state to visualization parameters
   const visualizerProps = {
