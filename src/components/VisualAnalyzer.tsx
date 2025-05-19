@@ -2,8 +2,8 @@
 import { useEffect, useRef } from "react";
 
 interface VisualAnalyzerProps {
-  audioContext?: AudioContext;
-  analyserNode?: AnalyserNode;
+  audioContext?: AudioContext | null;
+  analyserNode?: AnalyserNode | null;
   type?: "waveform" | "frequency" | "quantum";
   color?: string;
   backgroundColor?: string;
@@ -37,6 +37,18 @@ const VisualAnalyzer = ({
     resize();
     window.addEventListener("resize", resize);
 
+    // Buffer for analyzer data
+    let analyzerDataArray: Uint8Array | null = null;
+    
+    if (analyserNode) {
+      // Configure and set up analyzer data buffer
+      const bufferLength = type === "frequency" ? 
+        analyserNode.frequencyBinCount : 
+        analyserNode.fftSize;
+        
+      analyzerDataArray = new Uint8Array(bufferLength);
+    }
+
     const simulateQuantumData = () => {
       const data = new Uint8Array(128);
       const time = Date.now() / 1000;
@@ -66,8 +78,15 @@ const VisualAnalyzer = ({
       ctx.fillRect(0, 0, width, height);
 
       if (type === "waveform") {
-        // Simulate waveform data
-        const data = simulateQuantumData();
+        // Either get real waveform data or simulate it
+        let data: Uint8Array;
+        
+        if (analyserNode && analyzerDataArray) {
+          analyserNode.getByteTimeDomainData(analyzerDataArray);
+          data = analyzerDataArray;
+        } else {
+          data = simulateQuantumData();
+        }
         
         ctx.beginPath();
         ctx.strokeStyle = color;
@@ -96,12 +115,19 @@ const VisualAnalyzer = ({
         ctx.stroke();
         ctx.shadowBlur = 0;
       } else if (type === "frequency") {
-        // Simulate frequency data
-        const data = simulateQuantumData();
+        // Either get real frequency data or simulate it
+        let data: Uint8Array;
         
-        const barWidth = width / data.length;
+        if (analyserNode && analyzerDataArray) {
+          analyserNode.getByteFrequencyData(analyzerDataArray);
+          data = analyzerDataArray;
+        } else {
+          data = simulateQuantumData();
+        }
         
-        for (let i = 0; i < data.length; i++) {
+        const barWidth = width / Math.min(data.length, 128); // Limit to 128 bars
+        
+        for (let i = 0; i < Math.min(data.length, 128); i++) {
           const barHeight = (data[i] / 255) * height;
           
           // Create gradient
@@ -200,19 +226,11 @@ const VisualAnalyzer = ({
           ctx.fill();
         }
       }
-      
-      rafRef.current = requestAnimationFrame(drawSimulation);
     };
 
     const animate = () => {
-      if (!analyserNode || !audioContext) {
-        drawSimulation();
-        return;
-      }
-      
-      // Real audio visualization would go here if we had audio nodes
-      // For now, use the simulation
       drawSimulation();
+      rafRef.current = requestAnimationFrame(animate);
     };
 
     animate();

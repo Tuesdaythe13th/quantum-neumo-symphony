@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Toaster } from "sonner";
 import { Atom, Radio, Sliders, AudioWaveform, Play, Volume2 } from "lucide-react";
 
@@ -8,41 +8,115 @@ import VisualAnalyzer from "@/components/VisualAnalyzer";
 import QuantumPad from "@/components/QuantumPad";
 import DAWTransport from "@/components/DAWTransport";
 import { toast } from "sonner";
+import { quantumAudioEngine, QuantumAudioState } from "@/lib/quantumAudioEngine";
 
 const Index = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
   const [quantumSettings, setQuantumSettings] = useState<QuantumSettings | null>(null);
+  const [currentTime, setCurrentTime] = useState<string>("00:00");
+  const [totalTime, setTotalTime] = useState<string>("00:00");
+  const [audioState, setAudioState] = useState<QuantumAudioState | null>(null);
+  const [visualizerType, setVisualizerType] = useState<"waveform" | "frequency" | "quantum">("quantum");
+  
+  const timerRef = useRef<number | null>(null);
 
   // Initialize audio context on user interaction
   const initAudio = () => {
     if (audioContext) return;
     
     try {
-      const newAudioContext = new AudioContext();
-      const newAnalyserNode = newAudioContext.createAnalyser();
-      newAnalyserNode.fftSize = 2048;
-      newAnalyserNode.connect(newAudioContext.destination);
+      const engine = quantumAudioEngine;
+      const context = engine.getAudioContext();
+      const analyser = engine.getAnalyser();
       
-      setAudioContext(newAudioContext);
-      setAnalyserNode(newAnalyserNode);
-      
-      toast.success("Audio engine initialized");
+      if (context && analyser) {
+        setAudioContext(context);
+        setAnalyserNode(analyser);
+        toast.success("Audio engine initialized");
+      } else {
+        throw new Error("Failed to get audio context");
+      }
     } catch (error) {
       console.error("Failed to initialize audio:", error);
       toast.error("Failed to initialize audio");
     }
   };
 
-  const handlePlay = () => {
+  const generateQuantumAudio = async () => {
+    if (!quantumSettings) {
+      toast.error("No quantum settings configured");
+      return;
+    }
+    
+    try {
+      initAudio();
+      const result = await quantumAudioEngine.generateQuantumSound(quantumSettings);
+      setAudioState(result);
+      
+      // Format duration for display
+      const minutes = Math.floor(result.duration / 60);
+      const seconds = Math.floor(result.duration % 60);
+      setTotalTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      
+      toast.success("Quantum synthesis completed");
+      return result;
+    } catch (error) {
+      console.error("Failed to generate quantum audio:", error);
+      toast.error("Failed to generate quantum audio");
+      return null;
+    }
+  };
+
+  const handlePlay = async () => {
     initAudio();
+    
+    let stateToPlay = audioState;
+    if (!stateToPlay || !stateToPlay.audioBuffer) {
+      const result = await generateQuantumAudio();
+      if (!result || !result.audioBuffer) return;
+      stateToPlay = result;
+    }
+    
+    // Play the generated audio
+    quantumAudioEngine.play(stateToPlay.audioBuffer);
     setIsPlaying(true);
+    
+    // Start timer for tracking playback position
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current);
+    }
+    
+    const startTime = audioContext?.currentTime || 0;
+    
+    timerRef.current = window.setInterval(() => {
+      if (!audioContext) return;
+      
+      const elapsed = audioContext.currentTime - startTime;
+      if (elapsed >= stateToPlay!.duration) {
+        handleStop();
+        return;
+      }
+      
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = Math.floor(elapsed % 60);
+      setCurrentTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+    }, 100);
+    
     toast.success("Quantum synthesis started");
   };
 
   const handleStop = () => {
+    quantumAudioEngine.stop();
     setIsPlaying(false);
+    
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    setCurrentTime("00:00");
     toast.info("Synthesis stopped");
   };
 
@@ -59,16 +133,33 @@ const Index = () => {
   };
 
   const handleQuantumPadChange = (x: number, y: number) => {
-    // In a real implementation, this would update synthesis parameters
+    // Update synthesis parameters in real-time
     console.log("Quantum pad values:", { x, y });
+    
+    if (quantumSettings && audioContext) {
+      // Map x to entanglement and y to superposition
+      const newSettings = {
+        ...quantumSettings,
+        entanglement: Math.round(x * 100),
+        superposition: Math.round(y * 100)
+      };
+      
+      setQuantumSettings(newSettings);
+    }
   };
 
   useEffect(() => {
-    // Clean up audio context when component unmounts
+    // Clean up audio context and timers when component unmounts
     return () => {
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current);
+      }
+      
       if (audioContext && audioContext.state !== "closed") {
         audioContext.close();
       }
+      
+      quantumAudioEngine.stop();
     };
   }, [audioContext]);
 
@@ -126,28 +217,31 @@ const Index = () => {
               <div className="md:col-span-2">
                 <div className="neumorph h-60 rounded-xl overflow-hidden">
                   <VisualAnalyzer 
-                    type="quantum" 
+                    type={visualizerType}
                     color="#9b87f5"
+                    audioContext={audioContext}
+                    analyserNode={analyserNode}
                   />
                 </div>
                 
                 <div className="grid grid-cols-3 gap-4 mt-4">
                   <button 
-                    className="neumorph-button flex items-center justify-center gap-2 text-sm"
-                    onClick={() => toast.info("Waveform view selected")}
+                    className={`${visualizerType === 'waveform' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm`}
+                    onClick={() => setVisualizerType('waveform')}
                   >
                     <AudioWaveform className="h-4 w-4" />
                     Waveform
                   </button>
                   <button 
-                    className="neumorph-button flex items-center justify-center gap-2 text-sm"
-                    onClick={() => toast.info("Frequency view selected")}
+                    className={`${visualizerType === 'frequency' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm`}
+                    onClick={() => setVisualizerType('frequency')}
                   >
                     <Volume2 className="h-4 w-4" />
                     Spectrum
                   </button>
                   <button 
-                    className="neumorph-active flex items-center justify-center gap-2 text-sm"
+                    className={`${visualizerType === 'quantum' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm`}
+                    onClick={() => setVisualizerType('quantum')}
                   >
                     <Atom className="h-4 w-4" />
                     Quantum
@@ -180,6 +274,8 @@ const Index = () => {
                 <VisualAnalyzer 
                   type="waveform"
                   color="#9b87f5"
+                  audioContext={audioContext}
+                  analyserNode={analyserNode}
                 />
               </div>
               
@@ -194,11 +290,18 @@ const Index = () => {
                 
                 <div className="flex-1 mx-4">
                   <div className="bg-quantum-light h-1 rounded-full overflow-hidden">
-                    <div className="bg-quantum-accent h-full" style={{ width: "30%" }}></div>
+                    <div 
+                      className="bg-quantum-accent h-full" 
+                      style={{ 
+                        width: audioState && audioState.duration > 0 
+                          ? `${(parseFloat(currentTime.split(':')[0]) * 60 + parseFloat(currentTime.split(':')[1])) / audioState.duration * 100}%` 
+                          : "0%" 
+                      }}
+                    ></div>
                   </div>
                 </div>
                 
-                <div className="font-mono text-sm">00:00 / 02:30</div>
+                <div className="font-mono text-sm">{currentTime} / {totalTime}</div>
               </div>
             </div>
           </div>
@@ -231,17 +334,33 @@ const Index = () => {
             </div>
             
             <div className="grid grid-cols-4 gap-2">
-              {["00", "01", "10", "11"].map((state) => (
-                <div 
-                  key={state} 
-                  className="neumorph p-3 rounded-lg flex flex-col items-center"
-                >
-                  <div className="text-sm mb-1 font-mono">{state}</div>
-                  <div className="text-xl font-medium text-quantum-accent">
-                    {Math.floor(Math.random() * 40 + 10)}%
+              {audioState && audioState.quantumProbabilities ? 
+                Object.entries(audioState.quantumProbabilities)
+                  .slice(0, 4) // Show only first 4 states if there are many
+                  .map(([state, prob]) => (
+                    <div 
+                      key={state} 
+                      className="neumorph p-3 rounded-lg flex flex-col items-center"
+                    >
+                      <div className="text-sm mb-1 font-mono">{state}</div>
+                      <div className="text-xl font-medium text-quantum-accent">
+                        {Math.floor(prob * 100)}%
+                      </div>
+                    </div>
+                  ))
+                :
+                ["00", "01", "10", "11"].map((state) => (
+                  <div 
+                    key={state} 
+                    className="neumorph p-3 rounded-lg flex flex-col items-center"
+                  >
+                    <div className="text-sm mb-1 font-mono">{state}</div>
+                    <div className="text-xl font-medium text-quantum-accent">
+                      {Math.floor(Math.random() * 40 + 10)}%
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              }
             </div>
             
             <div className="mt-4 text-sm text-center text-quantum-muted">
