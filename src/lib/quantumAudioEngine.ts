@@ -189,15 +189,16 @@ export class QuantumAudioEngine {
         const filteredSample = this.applyQuantumFilter(sample, filterFactor, i);
         
         // Apply entanglement effect (slight modulation from one channel to the other)
+        let finalSample = filteredSample;
         if (channel === 1 && settings.stereo && settings.entanglement > 0) {
           const leftChannel = buffer.getChannelData(0);
           if (i > 0) {
             const entanglementFactor = settings.entanglement / 200;
-            filteredSample = filteredSample * (1 - entanglementFactor) + leftChannel[i-1] * entanglementFactor;
+            finalSample = filteredSample * (1 - entanglementFactor) + leftChannel[i-1] * entanglementFactor;
           }
         }
         
-        channelData[i] = filteredSample * envelope * 0.5; // Reduce volume to avoid clipping
+        channelData[i] = finalSample * envelope * 0.5; // Reduce volume to avoid clipping
       }
     }
     
