@@ -1,13 +1,14 @@
-
 import { useEffect, useRef } from "react";
 
 interface VisualAnalyzerProps {
   audioContext?: AudioContext | null;
   analyserNode?: AnalyserNode | null;
-  type?: "waveform" | "frequency" | "quantum";
+  type?: "waveform" | "frequency" | "quantum" | "qpixl";
   color?: string;
   backgroundColor?: string;
   className?: string;
+  qpixlData?: Float32Array | null;
+  temporalCoherence?: number;
 }
 
 const VisualAnalyzer = ({
@@ -17,6 +18,8 @@ const VisualAnalyzer = ({
   color = "#9b87f5",
   backgroundColor = "#1a1b2e",
   className = "",
+  qpixlData = null,
+  temporalCoherence = 50,
 }: VisualAnalyzerProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -65,6 +68,111 @@ const VisualAnalyzer = ({
       
       return data;
     };
+    
+    const drawQPIXLVisualization = () => {
+      if (!ctx || !canvas) return;
+      
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      
+      // Clear canvas
+      ctx.fillStyle = backgroundColor;
+      ctx.fillRect(0, 0, width, height);
+      
+      // Generate quantum pixel grid based on qpixlData or simulate it
+      const pixelSize = Math.floor(Math.min(width, height) / 16);
+      const gridSize = Math.min(16, Math.floor(Math.sqrt(qpixlData ? qpixlData.length : 256)));
+      
+      // Grid starting position (centered)
+      const offsetX = (width - pixelSize * gridSize) / 2;
+      const offsetY = (height - pixelSize * gridSize) / 2;
+      
+      const time = Date.now() / 1000;
+      const coherenceFactor = temporalCoherence / 100;
+      
+      // Draw quantum pixels
+      for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+          const index = y * gridSize + x;
+          let pixelValue = 0;
+          
+          if (qpixlData && index < qpixlData.length) {
+            pixelValue = qpixlData[index];
+          } else {
+            // Generate simulated pixel value
+            const normalizedX = x / gridSize;
+            const normalizedY = y / gridSize;
+            pixelValue = Math.sin(normalizedX * 5 + normalizedY * 7 + time * coherenceFactor) * 0.5 + 0.5;
+          }
+          
+          // Determine pixel intensity
+          const intensity = pixelValue * 255;
+          
+          // Create pixel gradient
+          const gradient = ctx.createLinearGradient(
+            offsetX + x * pixelSize,
+            offsetY + y * pixelSize,
+            offsetX + (x + 1) * pixelSize,
+            offsetY + (y + 1) * pixelSize
+          );
+          
+          gradient.addColorStop(0, `rgba(155, 135, 245, ${pixelValue.toFixed(2)})`);
+          gradient.addColorStop(1, `rgba(196, 181, 253, ${(pixelValue * 0.7).toFixed(2)})`);
+          
+          // Draw pixel
+          ctx.fillStyle = gradient;
+          ctx.fillRect(
+            offsetX + x * pixelSize, 
+            offsetY + y * pixelSize, 
+            pixelSize - 1, 
+            pixelSize - 1
+          );
+          
+          // Draw quantum connection lines (entanglement visualization)
+          if ((x + y) % 3 === 0 && pixelValue > 0.5) {
+            const targetX = Math.floor(Math.sin(time + x * y) * gridSize) % gridSize;
+            const targetY = Math.floor(Math.cos(time + x + y) * gridSize) % gridSize;
+            
+            ctx.beginPath();
+            ctx.moveTo(
+              offsetX + x * pixelSize + pixelSize / 2,
+              offsetY + y * pixelSize + pixelSize / 2
+            );
+            ctx.lineTo(
+              offsetX + targetX * pixelSize + pixelSize / 2,
+              offsetY + targetY * pixelSize + pixelSize / 2
+            );
+            ctx.strokeStyle = `rgba(155, 135, 245, ${(pixelValue * 0.3).toFixed(2)})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            // Add glow effect
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+          }
+        }
+      }
+      
+      // Draw grid overlay
+      ctx.strokeStyle = 'rgba(155, 135, 245, 0.2)';
+      ctx.lineWidth = 0.5;
+      
+      for (let i = 0; i <= gridSize; i++) {
+        // Vertical lines
+        ctx.beginPath();
+        ctx.moveTo(offsetX + i * pixelSize, offsetY);
+        ctx.lineTo(offsetX + i * pixelSize, offsetY + gridSize * pixelSize);
+        ctx.stroke();
+        
+        // Horizontal lines
+        ctx.beginPath();
+        ctx.moveTo(offsetX, offsetY + i * pixelSize);
+        ctx.lineTo(offsetX + gridSize * pixelSize, offsetY + i * pixelSize);
+        ctx.stroke();
+      }
+    };
 
     const drawSimulation = () => {
       if (!ctx || !canvas) return;
@@ -77,7 +185,9 @@ const VisualAnalyzer = ({
       ctx.fillStyle = backgroundColor;
       ctx.fillRect(0, 0, width, height);
 
-      if (type === "waveform") {
+      if (type === "qpixl") {
+        drawQPIXLVisualization();
+      } else if (type === "waveform") {
         // Either get real waveform data or simulate it
         let data: Uint8Array;
         
@@ -241,7 +351,7 @@ const VisualAnalyzer = ({
       }
       window.removeEventListener("resize", resize);
     };
-  }, [audioContext, analyserNode, type, color, backgroundColor]);
+  }, [audioContext, analyserNode, type, color, backgroundColor, qpixlData, temporalCoherence]);
 
   return (
     <canvas

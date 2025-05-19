@@ -1,4 +1,3 @@
-
 import { QuantumSettings } from "@/components/QuantumControls";
 
 export interface QuantumAudioState {
@@ -8,6 +7,17 @@ export interface QuantumAudioState {
   duration: number;
   quantumProbabilities: Record<string, number>;
   circuitData: any;
+  qpixlData?: Float32Array | null;
+  spectralAnalysis?: {
+    frequencies: Float32Array;
+    amplitudes: Float32Array;
+    harmonicRatios: number[];
+  } | null;
+  compressionMetrics?: {
+    originalComplexity: number;
+    compressedComplexity: number;
+    compressionRatio: number;
+  } | null;
 }
 
 export class QuantumAudioEngine {
@@ -19,6 +29,7 @@ export class QuantumAudioEngine {
   private chorusNode: DelayNode | null = null;
   private audioSource: AudioBufferSourceNode | null = null;
   private quantum_state: Record<string, number> = {};
+  private qpixlData: Float32Array | null = null;
 
   constructor() {
     this.initAudioContext();
@@ -113,6 +124,10 @@ export class QuantumAudioEngine {
     return this.audioContext;
   }
 
+  public getQPIXLData(): Float32Array | null {
+    return this.qpixlData;
+  }
+
   public async generateQuantumSound(settings: QuantumSettings): Promise<QuantumAudioState> {
     if (!this.audioContext) {
       throw new Error("Audio context not initialized");
@@ -135,6 +150,28 @@ export class QuantumAudioEngine {
       duration * sampleRate,
       sampleRate
     );
+    
+    // Generate QPIXL data if enabled
+    let spectralAnalysis = null;
+    let compressionMetrics = null;
+    
+    if (settings.qpixlIntegration) {
+      // Generate quantum-pixel mapping
+      const pixelDimensions = Math.pow(2, Math.min(4, settings.qubits - 2)); // Keep reasonable size
+      this.qpixlData = this.generateQPIXLData(
+        pixelDimensions, 
+        settings.spectralMapping, 
+        settings.temporalCoherence / 100
+      );
+      
+      // If we're using QPIXL for audio generation, use it to modulate the audio
+      if (settings.spectralMapping === "qpixl_bi") {
+        spectralAnalysis = this.performSpectralAnalysis(duration, sampleRate);
+        compressionMetrics = this.calculateCompressionMetrics(settings.compressionThreshold / 100);
+      }
+    } else {
+      this.qpixlData = null;
+    }
     
     // Generate audio data based on quantum parameters
     for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
@@ -170,6 +207,57 @@ export class QuantumAudioEngine {
             const quantumSine = Math.sin(2 * Math.PI * baseFreq * time);
             sample = (quantumSine * (1 - qFactor)) + (noise * qFactor * eFactor);
             break;
+        }
+        
+        // Apply QPIXL modulation if enabled
+        if (settings.qpixlIntegration && this.qpixlData) {
+          const pixelIndex = Math.floor((i / channelData.length) * this.qpixlData.length) % this.qpixlData.length;
+          const qpixlFactor = settings.temporalCoherence / 100;
+          
+          // Apply different modulation based on spectral mapping mode
+          switch (settings.spectralMapping) {
+            case "freq_qubits":
+              // Frequency modulation
+              const freqMod = 1 + (this.qpixlData[pixelIndex] - 0.5) * qpixlFactor;
+              sample = Math.sin(2 * Math.PI * baseFreq * time * freqMod);
+              break;
+            case "amp_phase":
+              // Amplitude and phase modulation
+              const phase = this.qpixlData[pixelIndex] * Math.PI * 2;
+              sample = sample * (0.5 + this.qpixlData[pixelIndex] * 0.5) + 
+                      Math.sin(2 * Math.PI * baseFreq * 1.5 * time + phase) * 0.3;
+              break;
+            case "harm_ent":
+              // Harmonic entanglement
+              const harmIndex = (pixelIndex + 1) % this.qpixlData.length;
+              const harmFactor = this.qpixlData[harmIndex];
+              sample = sample * 0.7 + 
+                      Math.sin(2 * Math.PI * baseFreq * 2 * time) * 0.3 * harmFactor;
+              break;
+            case "qpixl_bi":
+              // Full bidirectional mapping
+              sample = this.qpixlData[pixelIndex] * 2 - 1;
+              
+              // Apply quantum harmony if enabled
+              if (settings.quantumHarmony) {
+                const harmonicIndexes = [
+                  pixelIndex,
+                  (pixelIndex + this.qpixlData.length / 3) % this.qpixlData.length,
+                  (pixelIndex + this.qpixlData.length * 2 / 3) % this.qpixlData.length
+                ];
+                
+                sample = harmonicIndexes.reduce((acc, idx) => {
+                  return acc + (this.qpixlData![idx] * 2 - 1);
+                }, 0) / harmonicIndexes.length;
+              }
+              
+              // Apply compression if needed
+              if (settings.compressionThreshold > 0) {
+                const threshold = settings.compressionThreshold / 100;
+                sample = Math.tanh(sample * (1 + threshold * 2));
+              }
+              break;
+          }
         }
         
         // Apply envelope
@@ -211,7 +299,10 @@ export class QuantumAudioEngine {
       currentTime: 0,
       duration: buffer.duration,
       quantumProbabilities: this.quantum_state,
-      circuitData
+      circuitData,
+      qpixlData: this.qpixlData,
+      spectralAnalysis,
+      compressionMetrics
     };
   }
   
@@ -330,6 +421,149 @@ export class QuantumAudioEngine {
       depth: 3, // Maximum circuit depth
       gates: gates.flat(),
       measurements: this.quantum_state
+    };
+  }
+
+  private generateQPIXLData(pixelDimensions: number, mappingMode: string, temporalCoherence: number): Float32Array {
+    // Generate a quantum-pixel mapping based on the quantum state
+    const pixelCount = pixelDimensions * pixelDimensions;
+    const qpixlData = new Float32Array(pixelCount);
+    
+    // Seed based on current quantum state
+    const quantumSeed = Object.entries(this.quantum_state).reduce(
+      (acc, [state, prob]) => acc + parseInt(state, 2) * prob, 0
+    );
+    
+    // Generate pixel data based on quantum interference patterns
+    for (let i = 0; i < pixelCount; i++) {
+      const x = i % pixelDimensions / pixelDimensions;
+      const y = Math.floor(i / pixelDimensions) / pixelDimensions;
+      
+      // Use quantum seed to create deterministic but quantum-like patterns
+      const quantumPhase = quantumSeed * 10;
+      
+      // Create interference patterns based on mapping mode
+      switch (mappingMode) {
+        case "freq_qubits":
+          // Frequency-based patterns
+          qpixlData[i] = (
+            Math.sin(x * 5 + y * 7 + quantumPhase) * 0.5 + 
+            Math.sin(x * 13 + y * 17 + quantumPhase * 1.5) * 0.3 +
+            Math.sin(x * 29 + y * 31 + quantumPhase * 0.7) * 0.2
+          ) * 0.5 + 0.5;
+          break;
+        
+        case "amp_phase":
+          // Amplitude and phase patterns
+          qpixlData[i] = (
+            Math.sin(x * 2 * Math.PI + quantumPhase) * 
+            Math.cos(y * 2 * Math.PI + quantumPhase)
+          ) * 0.5 + 0.5;
+          break;
+        
+        case "harm_ent":
+          // Harmonic entanglement patterns
+          const distance = Math.sqrt(
+            Math.pow((x - 0.5) * 2, 2) + 
+            Math.pow((y - 0.5) * 2, 2)
+          );
+          qpixlData[i] = (
+            Math.cos(distance * 10 + quantumPhase) * 
+            Math.sin(x * y * 20 + quantumPhase)
+          ) * 0.5 + 0.5;
+          break;
+        
+        case "qpixl_bi":
+          // Bidirectional mapping - more complex patterns
+          const angle = Math.atan2(y - 0.5, x - 0.5);
+          const radiusVar = 0.5 + temporalCoherence * 0.5;
+          qpixlData[i] = (
+            Math.sin(distance * 15 * radiusVar + quantumPhase) * 0.3 +
+            Math.sin(angle * 5 + quantumPhase) * 0.3 +
+            Math.sin((x * x + y * y) * 20 + quantumPhase) * 0.4
+          ) * 0.5 + 0.5;
+          break;
+          
+        default:
+          // Default simple pattern
+          qpixlData[i] = (
+            Math.sin(x * 10 + quantumPhase) * 
+            Math.cos(y * 10 + quantumPhase)
+          ) * 0.5 + 0.5;
+      }
+    }
+    
+    return qpixlData;
+  }
+  
+  private performSpectralAnalysis(duration: number, sampleRate: number) {
+    // Perform spectral analysis on the generated quantum data
+    if (!this.qpixlData) return null;
+    
+    // Create a simulated frequency spectrum based on qpixlData
+    const frequencies = new Float32Array(128);
+    const amplitudes = new Float32Array(128);
+    const harmonicRatios = [];
+    
+    // Extract frequency and amplitude information from QPIXL data
+    for (let i = 0; i < frequencies.length; i++) {
+      const normalizedFreq = i / frequencies.length;
+      
+      // Sample QPIXL data for this frequency bin
+      const pixelIndex = Math.floor(normalizedFreq * this.qpixlData.length);
+      
+      // Set frequency and amplitude
+      frequencies[i] = 440 * Math.pow(2, (normalizedFreq * 2 - 1));
+      amplitudes[i] = this.qpixlData[pixelIndex % this.qpixlData.length];
+      
+      // Calculate harmonic ratios for some frequencies
+      if (i % 12 === 0) {
+        const harmonicIndex = (pixelIndex + this.qpixlData.length / 3) % this.qpixlData.length;
+        const harmonicStrength = this.qpixlData[harmonicIndex];
+        harmonicRatios.push(harmonicStrength / amplitudes[i]);
+      }
+    }
+    
+    return {
+      frequencies,
+      amplitudes,
+      harmonicRatios
+    };
+  }
+  
+  private calculateCompressionMetrics(compressionThreshold: number) {
+    // Calculate compression metrics for the QPIXL data
+    if (!this.qpixlData) return null;
+    
+    // Simple complexity metric - entropy-like measure
+    const originalComplexity = this.qpixlData.reduce((acc, val) => {
+      const p = Math.max(0.001, Math.min(0.999, val)); // Avoid log(0)
+      return acc - (p * Math.log2(p) + (1-p) * Math.log2(1-p));
+    }, 0) / this.qpixlData.length;
+    
+    // Apply compression (simple quantization)
+    const levels = Math.max(2, Math.floor(16 * (1 - compressionThreshold)));
+    const compressedValues = new Float32Array(this.qpixlData.length);
+    
+    for (let i = 0; i < this.qpixlData.length; i++) {
+      // Quantize to fewer levels
+      const quantized = Math.floor(this.qpixlData[i] * levels) / levels;
+      compressedValues[i] = quantized;
+    }
+    
+    // Calculate compressed complexity
+    const compressedComplexity = compressedValues.reduce((acc, val) => {
+      const p = Math.max(0.001, Math.min(0.999, val));
+      return acc - (p * Math.log2(p) + (1-p) * Math.log2(1-p));
+    }, 0) / compressedValues.length;
+    
+    const compressionRatio = originalComplexity > 0 ? 
+      compressedComplexity / originalComplexity : 1;
+    
+    return {
+      originalComplexity,
+      compressedComplexity,
+      compressionRatio
     };
   }
 

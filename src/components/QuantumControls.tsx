@@ -4,12 +4,15 @@ import QuantumKnob from "./QuantumKnob";
 import QuantumSlider from "./QuantumSlider";
 import QuantumSwitch from "./QuantumSwitch";
 import WaveSelector from "./WaveSelector";
+import SpectralMappingSelector from "./SpectralMappingSelector";
 import { cn } from "@/lib/utils";
 
 interface QuantumControlsProps {
   className?: string;
   onChange?: (settings: QuantumSettings) => void;
 }
+
+export type SpectralMode = "freq_qubits" | "amp_phase" | "harm_ent" | "qpixl_bi";
 
 export interface QuantumSettings {
   qubits: number;
@@ -23,6 +26,12 @@ export interface QuantumSettings {
   chorus: boolean;
   stereo: boolean;
   quantumFilter: number;
+  // Advanced quantum features
+  qpixlIntegration: boolean;
+  spectralMapping: SpectralMode;
+  temporalCoherence: number;
+  quantumHarmony: boolean;
+  compressionThreshold: number;
 }
 
 const QuantumControls: React.FC<QuantumControlsProps> = ({
@@ -41,6 +50,12 @@ const QuantumControls: React.FC<QuantumControlsProps> = ({
     chorus: false,
     stereo: true,
     quantumFilter: 60,
+    // Initialize advanced features
+    qpixlIntegration: false,
+    spectralMapping: "freq_qubits",
+    temporalCoherence: 50,
+    quantumHarmony: false,
+    compressionThreshold: 30,
   });
 
   const updateSettings = <K extends keyof QuantumSettings>(
@@ -104,6 +119,56 @@ const QuantumControls: React.FC<QuantumControlsProps> = ({
         value={settings.waveform}
         onChange={(value) => updateSettings("waveform", value)}
       />
+
+      {/* Advanced Quantum Features Section */}
+      <div className="pt-4 border-t border-quantum-light">
+        <h3 className="text-sm font-medium mb-4">Advanced Quantum Controls</h3>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <QuantumSwitch
+            label="QPIXL Integration"
+            value={settings.qpixlIntegration}
+            onChange={(value) => updateSettings("qpixlIntegration", value)}
+          />
+          
+          <QuantumSwitch
+            label="Quantum Harmony"
+            value={settings.quantumHarmony}
+            onChange={(value) => updateSettings("quantumHarmony", value)}
+          />
+        </div>
+        
+        {settings.qpixlIntegration && (
+          <>
+            <div className="mt-4">
+              <SpectralMappingSelector
+                value={settings.spectralMapping}
+                onChange={(value) => updateSettings("spectralMapping", value)}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <QuantumSlider
+                label="Compression"
+                value={settings.compressionThreshold}
+                min={0}
+                max={100}
+                onChange={(value) => updateSettings("compressionThreshold", value)}
+                unit="%"
+              />
+              
+              <QuantumSlider
+                label="Temporal Coherence"
+                value={settings.temporalCoherence}
+                min={0}
+                max={100}
+                onChange={(value) => updateSettings("temporalCoherence", value)}
+                unit="%"
+              />
+            </div>
+          </>
+        )}
+      </div>
 
       <div className="space-y-3">
         <h3 className="text-sm font-medium">Effects</h3>
