@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Play, Stop, Download, Save, Settings } from "lucide-react";
+import { Play, CircleStop, Download, Save, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DAWTransportProps {
@@ -38,7 +38,7 @@ const DAWTransport: React.FC<DAWTransportProps> = ({
           aria-label={isPlaying ? "Stop" : "Play"}
         >
           {isPlaying ? (
-            <Stop className="h-5 w-5" />
+            <CircleStop className="h-5 w-5" />
           ) : (
             <Play className="h-5 w-5" />
           )}

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Toaster } from "sonner";
-import { Atom, Radio, Sliders, Waveform, Play, Volume2 } from "lucide-react";
+import { Atom, Radio, Sliders, WaveformIcon, Play, Volume2 } from "lucide-react";
 
 import QuantumControls, { QuantumSettings } from "@/components/QuantumControls";
 import VisualAnalyzer from "@/components/VisualAnalyzer";
@@ -117,7 +117,7 @@ const Index = () => {
           {/* Visualizer + Matrix */}
           <div className="neumorph p-4 rounded-xl lg:col-span-2">
             <div className="flex items-center mb-4">
-              <Waveform className="h-5 w-5 text-quantum-accent mr-2" />
+              <WaveformIcon className="h-5 w-5 text-quantum-accent mr-2" />
               <h2 className="text-xl font-bold">Quantum Visualizer</h2>
             </div>
             
