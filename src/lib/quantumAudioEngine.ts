@@ -567,7 +567,7 @@ export class QuantumAudioEngine {
     };
   }
 
-  public play(buffer: AudioBuffer): void {
+  public play(buffer: AudioBuffer, seamless: boolean = false): void {
     if (!this.audioContext) return;
     
     // Resume audio context if suspended (browser policy)
@@ -576,12 +576,55 @@ export class QuantumAudioEngine {
     }
     
     // Create and configure source
-    this.audioSource = this.audioContext.createBufferSource();
-    this.audioSource.buffer = buffer;
-    this.audioSource.connect(this.gainNode!);
+    const newSource = this.audioContext.createBufferSource();
+    newSource.buffer = buffer;
+    
+    if (seamless && this.audioSource) {
+      // For seamless transition, we don't stop the current source immediately
+      // but fade between them
+      
+      // Create a gain node for the old source
+      const oldGain = this.audioContext.createGain();
+      this.audioSource.disconnect();
+      this.audioSource.connect(oldGain);
+      oldGain.connect(this.gainNode!);
+      
+      // Create a gain node for the new source
+      const newGain = this.audioContext.createGain();
+      newSource.connect(newGain);
+      newGain.connect(this.gainNode!);
+      
+      // Cross-fade
+      const fadeTime = 0.1; // 100ms crossfade
+      const now = this.audioContext.currentTime;
+      
+      // Fade out old source
+      oldGain.gain.setValueAtTime(1, now);
+      oldGain.gain.linearRampToValueAtTime(0, now + fadeTime);
+      
+      // Fade in new source
+      newGain.gain.setValueAtTime(0, now);
+      newGain.gain.linearRampToValueAtTime(1, now + fadeTime);
+      
+      // Schedule cleanup of old source
+      setTimeout(() => {
+        try {
+          this.audioSource?.stop();
+        } catch (e) {
+          // Ignore errors if already stopped
+        }
+      }, fadeTime * 1000 + 10);
+    } else {
+      // Stop current audio if any
+      this.stop();
+      
+      // Connect new source
+      newSource.connect(this.gainNode!);
+    }
     
     // Start playback
-    this.audioSource.start();
+    newSource.start();
+    this.audioSource = newSource;
   }
 
   public stop(): void {

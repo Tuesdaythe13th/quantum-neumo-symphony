@@ -25,6 +25,7 @@ const Index = () => {
   
   const timerRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastSettingsRef = useRef<QuantumSettings | null>(null);
 
   // Initialize audio context on user interaction
   const initAudio = () => {
@@ -58,6 +59,7 @@ const Index = () => {
       initAudio();
       const result = await quantumAudioEngine.generateQuantumSound(quantumSettings);
       setAudioState(result);
+      lastSettingsRef.current = quantumSettings;
       
       if (quantumSettings.qpixlIntegration) {
         setVisualizerType("qpixl");
@@ -104,7 +106,8 @@ const Index = () => {
       
       const elapsed = audioContext.currentTime - startTime;
       if (elapsed >= stateToPlay!.duration) {
-        handleStop();
+        // Instead of stopping, regenerate the audio for continuous play
+        handleContinuousPlay();
         return;
       }
       
@@ -114,6 +117,39 @@ const Index = () => {
     }, 100);
     
     toast.success("Quantum synthesis started");
+  };
+
+  // New function for continuous playback
+  const handleContinuousPlay = async () => {
+    if (!isPlaying) return;
+    
+    if (quantumSettings) {
+      const result = await generateQuantumAudio();
+      if (result && result.audioBuffer) {
+        quantumAudioEngine.play(result.audioBuffer);
+        // Reset timer
+        if (timerRef.current) {
+          window.clearInterval(timerRef.current);
+        }
+        
+        const startTime = audioContext?.currentTime || 0;
+        
+        timerRef.current = window.setInterval(() => {
+          if (!audioContext) return;
+          
+          const elapsed = audioContext.currentTime - startTime;
+          if (elapsed >= result.duration) {
+            // Continue the loop
+            handleContinuousPlay();
+            return;
+          }
+          
+          const minutes = Math.floor(elapsed / 60);
+          const seconds = Math.floor(elapsed % 60);
+          setCurrentTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+        }, 100);
+      }
+    }
   };
 
   const handleStop = () => {
@@ -128,6 +164,22 @@ const Index = () => {
     setCurrentTime("00:00");
     toast.info("Synthesis stopped");
   };
+
+  // Effect to regenerate audio when settings change while playing
+  useEffect(() => {
+    if (isPlaying && quantumSettings && 
+        JSON.stringify(quantumSettings) !== JSON.stringify(lastSettingsRef.current)) {
+      const regenerateAudio = async () => {
+        const result = await generateQuantumAudio();
+        if (result && result.audioBuffer) {
+          // Keep playing with new settings
+          quantumAudioEngine.play(result.audioBuffer, true); // true for seamless transition
+        }
+      };
+      
+      regenerateAudio();
+    }
+  }, [quantumSettings, isPlaying]);
 
   const handleSave = () => {
     toast.success("Preset saved");
