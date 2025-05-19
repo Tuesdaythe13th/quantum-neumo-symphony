@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Toaster } from "sonner";
 import { 
   Atom, Radio, Sliders, AudioWaveform, Play, 
-  Volume2, Upload, Grid, Download, Waveform 
+  Volume2, Upload, Grid, Download
 } from "lucide-react";
 
 import QuantumControls, { QuantumSettings, SpectralMode } from "@/components/QuantumControls";
@@ -424,7 +423,7 @@ const Index = () => {
                     className={`${visualizerType === 'waveform' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
                     onClick={() => setVisualizerType('waveform')}
                   >
-                    <Waveform className="h-4 w-4" />
+                    <AudioWaveform className="h-4 w-4" />
                     <span className="hidden sm:inline">Waveform</span>
                   </button>
                   
