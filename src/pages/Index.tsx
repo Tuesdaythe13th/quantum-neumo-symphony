@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Atom, Radio, Sliders, AudioWaveform, Play, 
@@ -10,7 +9,7 @@ import VisualAnalyzer from "@/components/VisualAnalyzer";
 import QuantumPad from "@/components/QuantumPad";
 import DAWTransport from "@/components/DAWTransport";
 import QuantumAdvancedAudio from "@/components/QuantumAdvancedAudio";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { quantumAudioEngine } from "@/lib/quantumAudioEngine";
 import { AdvancedAudioSettings, defaultSettings as defaultAdvancedSettings } from "@/types/advancedAudioTypes";
 import type { QuantumSettings } from "@/components/QuantumControls";
@@ -253,7 +252,7 @@ const Index = () => {
     toast.info("Synthesis stopped");
   };
 
-  // Add new useEffect to update visualization on quantum settings change
+  // Add the useEffect hook for real-time visualization updates
   useEffect(() => {
     if (quantumSettings) {
       lastSettingsRef.current = quantumSettings;
@@ -516,8 +515,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-quantum-bg text-white p-4 md:p-6 overflow-hidden">
-      <Toaster position="top-right" />
-      
       {/* Hidden file input for uploads */}
       <input 
         type="file"
