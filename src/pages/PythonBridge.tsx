@@ -52,14 +52,16 @@ const PythonBridge = () => {
       entanglement: 0.6,
       compression_ratio: 0.3,
       quantum_noise: 0.1,
-      // This triggers QPIXL mode
+      // This triggers QPIXL mode (determines visualizerType)
       probabilities: {
         "00": 0.35,
         "01": 0.25,
         "10": 0.20,
         "11": 0.20
       },
-      debug_message: "✅ Test QPIXL data injected - Visualizer should switch to QPIXL mode"
+      // This is the actual data for the QPIXL visualizer
+      qpixlData: new Float32Array(Array.from({ length: 16 * 16 }, () => Math.random() * 0.8 + 0.1)), // Example: 16x16 grid
+      debug_message: "✅ Test QPIXL data injected - Visualizer should switch to QPIXL mode and use qpixlData"
     };
     
     // Set test state for visualizer

@@ -15,6 +15,7 @@ interface QuantumStateData {
   compression_ratio?: number;
   quantum_noise?: number;
   probabilities?: Record<string, number>;
+  qpixlData?: Float32Array | null;
   debug_message?: string;
 }
 
@@ -59,7 +60,13 @@ const QuantumSynestheticViz: React.FC<QuantumSynestheticVizProps> = ({
   useEffect(() => {
     if (externalQuantumState) {
       if (DEBUG) console.log("Using external quantum state:", externalQuantumState);
-      setCurrentState(externalQuantumState);
+      setCurrentState(prevState => ({
+        ...prevState,
+        ...externalQuantumState,
+        qpixlData: externalQuantumState.qpixlData 
+          ? (externalQuantumState.qpixlData instanceof Float32Array ? externalQuantumState.qpixlData : new Float32Array(externalQuantumState.qpixlData)) 
+          : null,
+      }));
     }
   }, [externalQuantumState]);
 
@@ -85,7 +92,19 @@ const QuantumSynestheticViz: React.FC<QuantumSynestheticVizProps> = ({
         if (DEBUG) console.log("WebSocket message received:", message);
         
         if (message.type === 'quantum_state_update' && message.data) {
-          setCurrentState(message.data);
+          const newStateData = { ...message.data };
+          if (newStateData.qpixlData) {
+            if (newStateData.qpixlData instanceof Float32Array) {
+              // Already a Float32Array, use as is
+            } else if (Array.isArray(newStateData.qpixlData)) {
+              newStateData.qpixlData = new Float32Array(newStateData.qpixlData);
+            } else {
+              console.warn("Received qpixlData is not an array or Float32Array, ignoring:", newStateData.qpixlData);
+              newStateData.qpixlData = null;
+            }
+          }
+          
+          setCurrentState(prevState => ({ ...prevState, ...newStateData }));
           
           // Notify parent component of received data if callback provided
           if (onDataReceived) {
@@ -239,17 +258,23 @@ const QuantumSynestheticViz: React.FC<QuantumSynestheticVizProps> = ({
   // Improved Float32Array handling with proper typing
   const probabilityValues: number[] = 
     hasQpixlData 
-      ? Object.values(currentState.probabilities!) as number[]
+      ? Object.values(currentState.probabilities!) as number[] // This is for hasQpixlData logic, not directly for VisualAnalyzer qpixlData prop
       : [];
 
   // Convert quantum state to visualization parameters
   const visualizerProps = {
     type: visualizerType,
-    qpixlData: new Float32Array(probabilityValues),
+    qpixlData: visualizerType === "qpixl" 
+      ? (currentState.qpixlData ? currentState.qpixlData : null) 
+      : null, // Pass null if not in qpixl mode or if qpixlData is not available
     temporalCoherence: currentState.entanglement * 100,
     color: `hsl(${(currentState.phase * 180 / Math.PI + 90) % 360}, 90%, 70%)`,
     backgroundColor: "transparent"
   };
+  
+  if (DEBUG && visualizerType === "qpixl") {
+    console.log("Visualizer QPIXL Props:", { qpixlData: visualizerProps.qpixlData, currentStateQpixlData: currentState.qpixlData });
+  }
 
   return (
     <div className={cn("relative h-full w-full bg-gradient-to-br from-gray-950 via-black to-purple-900/30", className)}>

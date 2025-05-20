@@ -27,7 +27,7 @@ const Index = () => {
   const [audioState, setAudioState] = useState<QuantumAudioState | null>(null);
   const [visualizerType, setVisualizerType] = useState<"waveform" | "frequency" | "quantum" | "qpixl">("quantum");
   const [temporalCoherence, setTemporalCoherence] = useState<number>(50);
-  const [showAdvancedAudio, setShowAdvancedAudio] = useState<boolean>(false);
+  // const [showAdvancedAudio, setShowAdvancedAudio] = useState<boolean>(false); // Step 2: Remove showAdvancedAudio state
   const [engineAudioState, setEngineAudioState] = useState<QuantumAudioState | null>(null);
   const [pythonOutput, setPythonOutput] = useState<{ qpixlStateArray: Float32Array | null, analysisDataFromPython: any | null }>({
     qpixlStateArray: null,
@@ -38,6 +38,7 @@ const Index = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastSettingsRef = useRef<QuantumSettings | null>(null);
   const lastAdvancedSettingsRef = useRef<AdvancedAudioSettings | null>(null);
+  const prevQpixlIntegrationRef = useRef<boolean | undefined>(undefined);
 
   // Initialize audio context on user interaction
   const initAudio = () => {
@@ -169,17 +170,35 @@ const Index = () => {
   };
 
   const handlePlay = async () => {
-    initAudio();
-    
-    let stateToPlay = audioState;
-    if (!stateToPlay || !stateToPlay.audioBuffer) {
-      const result = await generateQuantumAudio();
-      if (!result || !result.audioBuffer) return;
-      stateToPlay = result;
+    initAudio(); // Step 4: Ensure initAudio is called
+
+    let currentAudioStateForPlayback = audioState;
+
+    // Step 2 & 3: Always generate new audio if audioState is invalid or if settings have changed significantly while stopped.
+    // The existing useEffect for settings changes during playback handles that case.
+    // For simplicity and robustness, if quantumSettings are present, we'll treat a play from stopped as needing fresh generation.
+    // If audioState is null (e.g. first play or after stop), definitely regenerate.
+    if (!currentAudioStateForPlayback || !currentAudioStateForPlayback.audioBuffer || !isPlaying) { // Added !isPlaying to force regen if stopped
+      const generationResult = await generateQuantumAudio(); // This uses current settings and updates engineAudioState
+      
+      if (!generationResult || !generationResult.audioBuffer) {
+        toast.error("Audio generation failed, cannot play.");
+        return;
+      }
+      // Use the freshly generated audio for playback
+      // generateQuantumAudio already sets engineAudioState. We can use that or update audioState directly.
+      // For clarity, let's ensure audioState is explicitly set with the new result.
+      setAudioState(generationResult); 
+      currentAudioStateForPlayback = generationResult;
     }
     
+    if (!currentAudioStateForPlayback || !currentAudioStateForPlayback.audioBuffer) {
+      toast.error("No valid audio to play.");
+      return;
+    }
+
     // Play the generated audio
-    quantumAudioEngine.play(stateToPlay.audioBuffer);
+    quantumAudioEngine.play(currentAudioStateForPlayback.audioBuffer);
     setIsPlaying(true);
     
     // Start timer for tracking playback position
@@ -188,14 +207,15 @@ const Index = () => {
     }
     
     const startTime = audioContext?.currentTime || 0;
+    const durationToPlay = currentAudioStateForPlayback.duration; // Use the duration of the state being played
     
     timerRef.current = window.setInterval(() => {
       if (!audioContext) return;
       
       const elapsed = audioContext.currentTime - startTime;
-      if (elapsed >= stateToPlay!.duration) {
+      if (elapsed >= durationToPlay) {
         // Instead of stopping, regenerate the audio for continuous play
-        handleContinuousPlay();
+        handleContinuousPlay(); // This function also calls generateQuantumAudio
         return;
       }
       
@@ -204,39 +224,50 @@ const Index = () => {
       setCurrentTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
     }, 100);
     
-    toast.success("Quantum synthesis started");
+    // Toast moved to generateQuantumAudio, but we can add a "Playback started" here if distinct
+    // toast.success("Quantum synthesis started"); // Or "Playback started"
   };
 
   // New function for continuous playback
   const handleContinuousPlay = async () => {
-    if (!isPlaying) return;
+    if (!isPlaying || !quantumSettings) { // Ensure quantumSettings exist for generation
+      setIsPlaying(false); // Stop if settings are missing
+      return;
+    }
     
-    if (quantumSettings) {
-      const result = await generateQuantumAudio();
-      if (result && result.audioBuffer) {
-        quantumAudioEngine.play(result.audioBuffer);
-        // Reset timer
-        if (timerRef.current) {
-          window.clearInterval(timerRef.current);
+    // Always generate new audio for continuous play based on current settings
+    const generationResult = await generateQuantumAudio(); 
+    
+    if (generationResult && generationResult.audioBuffer) {
+      setAudioState(generationResult); // Update audioState with the new generation
+      quantumAudioEngine.play(generationResult.audioBuffer);
+      
+      // Reset timer
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current);
+      }
+      
+      const startTime = audioContext?.currentTime || 0;
+      const durationToPlay = generationResult.duration;
+
+      timerRef.current = window.setInterval(() => {
+        if (!audioContext) return;
+        
+        const elapsed = audioContext.currentTime - startTime;
+        if (elapsed >= durationToPlay) {
+          // Continue the loop
+          handleContinuousPlay();
+          return;
         }
         
-        const startTime = audioContext?.currentTime || 0;
-        
-        timerRef.current = window.setInterval(() => {
-          if (!audioContext) return;
-          
-          const elapsed = audioContext.currentTime - startTime;
-          if (elapsed >= result.duration) {
-            // Continue the loop
-            handleContinuousPlay();
-            return;
-          }
-          
-          const minutes = Math.floor(elapsed / 60);
-          const seconds = Math.floor(elapsed % 60);
-          setCurrentTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-        }, 100);
-      }
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = Math.floor(elapsed % 60);
+        setCurrentTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      }, 100);
+    } else {
+      // If generation fails, stop playback
+      setIsPlaying(false);
+      toast.error("Failed to regenerate audio for continuous play.");
     }
   };
 
@@ -248,6 +279,10 @@ const Index = () => {
       window.clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    // Clear audioState on stop so that pressing play always regenerates.
+    // setAudioState(null); // This makes it simple: play always regenerates if stopped.
+    // Or, keep audioState and rely on the !isPlaying condition in handlePlay for regeneration.
+    // For now, let's rely on !isPlaying in handlePlay and the settings change useEffect.
     
     setCurrentTime("00:00");
     toast.info("Synthesis stopped");
@@ -256,6 +291,21 @@ const Index = () => {
   // Add new useEffect to update visualization on quantum settings change
   useEffect(() => {
     if (quantumSettings) {
+      // Check if qpixlIntegration has changed
+      if (prevQpixlIntegrationRef.current !== undefined && 
+          quantumSettings.qpixlIntegration !== prevQpixlIntegrationRef.current) {
+        if (quantumSettings.qpixlIntegration) {
+          toast.info("QPIXL Integration Enabled! Select the 'QPIXL' visualizer type to see the effect.", {
+            duration: 5000, // Keep the toast visible for a bit longer
+          });
+        } else {
+          toast.info("QPIXL Integration Disabled.");
+        }
+      }
+      
+      // Update previous qpixlIntegration value
+      prevQpixlIntegrationRef.current = quantumSettings.qpixlIntegration;
+      
       lastSettingsRef.current = quantumSettings;
       updateVisualizationOnly(); // This updates visualizer immediately!
     }
@@ -473,9 +523,9 @@ const Index = () => {
   };
 
   // Toggle advanced audio panel
-  const toggleAdvancedAudio = () => {
-    setShowAdvancedAudio(!showAdvancedAudio);
-  };
+  // const toggleAdvancedAudio = () => { // Step 2: Remove toggleAdvancedAudio function
+  //   setShowAdvancedAudio(!showAdvancedAudio);
+  // };
 
   // Update the volume control section to use the advancedAudioSettings
   const handleVolumeChange = (newVolume: number) => {
@@ -569,79 +619,111 @@ const Index = () => {
           </button>
         </div>
 
-        {/* Visualizer moved to the top */}
-        <div className="neumorph p-4 rounded-xl mb-6">
-          <div className="flex items-center mb-4">
-            <AudioWaveform className="h-5 w-5 text-quantum-accent mr-2" />
-            <h2 className="text-xl font-bold">Quantum Visualizer</h2>
-          </div>
+        {/* New Parent Div for Visualizer and Advanced Audio - Step 1 */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6"> {/* Step 1: Apply grid/flex for side-by-side */}
           
-          <div className="h-60 rounded-xl overflow-hidden">
-            <VisualAnalyzer 
-              type={visualizerType}
-              color="#9b87f5"
-              audioContext={audioContext}
-              analyserNode={analyserNode}
-              qpixlData={pythonOutput.qpixlStateArray}
-              temporalCoherence={quantumSettings?.temporalCoherence ?? 50}
+          {/* Visualizer Section - lg:col-span-3 */}
+          <div className="neumorph p-3 rounded-xl lg:col-span-3"> {/* Step 3: Reduce padding */}
+            <div className="flex items-center mb-3"> {/* Step 3: Reduce margin */}
+              <AudioWaveform className="h-5 w-5 text-quantum-accent mr-2" />
+              <h2 className="text-lg font-bold">Quantum Visualizer</h2> {/* Compactness: text-lg */}
+            </div>
+            
+            <div className="h-60 rounded-xl overflow-hidden"> {/* Consider adjusting height if needed */}
+              <VisualAnalyzer 
+                type={visualizerType}
+                color="#9b87f5"
+                audioContext={audioContext}
+                analyserNode={analyserNode}
+                qpixlData={pythonOutput.qpixlStateArray}
+                temporalCoherence={quantumSettings?.temporalCoherence ?? 50}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3"> {/* Step 3: Reduce margin */}
+              <button 
+                className={`${visualizerType === 'waveform' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-1 text-xs p-1.5`} // Compactness
+                onClick={() => setVisualizerType('waveform')}
+              >
+                <AudioWaveform className="h-3.5 w-3.5" /> {/* Compactness */}
+                <span className="hidden sm:inline">Waveform</span>
+              </button>
+              <button 
+                className={`${visualizerType === 'frequency' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-1 text-xs p-1.5`} // Compactness
+                onClick={() => setVisualizerType('frequency')}
+              >
+                <Volume2 className="h-3.5 w-3.5" /> {/* Compactness */}
+                <span className="hidden sm:inline">Spectrum</span>
+              </button>
+              <button 
+                className={`${visualizerType === 'quantum' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-1 text-xs p-1.5`} // Compactness
+                onClick={() => setVisualizerType('quantum')}
+              >
+                <Atom className="h-3.5 w-3.5" /> {/* Compactness */}
+                <span className="hidden sm:inline">Quantum</span>
+              </button>
+              <button 
+                className={`${visualizerType === 'qpixl' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-1 text-xs p-1.5`} // Compactness
+                onClick={() => setVisualizerType('qpixl')}
+              >
+                <Grid className="h-3.5 w-3.5" /> {/* Compactness */}
+                <span className="hidden sm:inline">QPIXL</span>
+              </button>
+            </div>
+            {/* QPIXL Status Indicator */}
+            <div className="mt-1.5 text-center"> {/* Step 3: Reduce margin */}
+              {(() => {
+                if (visualizerType === 'qpixl') {
+                  if (pythonOutput.qpixlStateArray && pythonOutput.qpixlStateArray.length > 0) {
+                    return <span className="text-xs font-medium text-green-400">Status: QPIXL Data Loaded</span>;
+                  } else {
+                    return <span className="text-xs font-medium text-yellow-400">Status: QPIXL Active - No Data</span>;
+                  }
+                } else {
+                  if (quantumSettings && !quantumSettings.qpixlIntegration) {
+                    return <span className="text-xs font-medium text-gray-500">Status: QPIXL Integration Disabled</span>;
+                  }
+                  return <span className="text-xs font-medium text-gray-500">Status: QPIXL Inactive</span>;
+                }
+              })()}
+            </div>
+          </div>
+
+          {/* Advanced Audio Synthesis Section - lg:col-span-2 */}
+          {/* Step 2: Advanced controls always visible */}
+          <div className="neumorph p-3 rounded-xl lg:col-span-2"> {/* Step 3: Reduce padding */}
+            <div className="flex items-center mb-3"> {/* Step 3: Reduce margin */}
+              <Volume2 className="h-5 w-5 text-quantum-accent mr-2" />
+              <h2 className="text-lg font-bold">Advanced Audio Synthesis</h2> {/* Compactness: text-lg */}
+            </div>
+            {/* QuantumAdvancedAudio is now always visible */}
+            <QuantumAdvancedAudio 
+              onChange={handleAdvancedAudioChange}
+              initialSettings={advancedAudioSettings}
             />
-          </div>
-          
-          <div className="grid grid-cols-4 gap-2 mt-4">
-            <button 
-              className={`${visualizerType === 'waveform' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
-              onClick={() => setVisualizerType('waveform')}
-            >
-              <AudioWaveform className="h-4 w-4" />
-              <span className="hidden sm:inline">Waveform</span>
-            </button>
-            
-            <button 
-              className={`${visualizerType === 'frequency' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
-              onClick={() => setVisualizerType('frequency')}
-            >
-              <Volume2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Spectrum</span>
-            </button>
-            
-            <button 
-              className={`${visualizerType === 'quantum' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
-              onClick={() => setVisualizerType('quantum')}
-            >
-              <Atom className="h-4 w-4" />
-              <span className="hidden sm:inline">Quantum</span>
-            </button>
-            
-            <button 
-              className={`${visualizerType === 'qpixl' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
-              onClick={() => setVisualizerType('qpixl')}
-            >
-              <Grid className="h-4 w-4" />
-              <span className="hidden sm:inline">QPIXL</span>
-            </button>
           </div>
         </div>
 
-        {/* Main Interface Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        {/* Main Interface Grid (Remaining items) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4"> {/* Step 3: Potentially adjust mt if needed */}
           {/* Control Panels - REARRANGED: Matrix first, then Quantum Controls */}
-          <div className="space-y-6">
+          <div className="space-y-4"> {/* Step 3: Reduce space-y */}
             {/* Matrix - MOVED UP */}
-            <div className="neumorph p-4 rounded-xl">
-              <div className="flex items-center mb-4">
+            <div className="neumorph p-3 rounded-xl"> {/* Step 3: Reduce padding */}
+              <div className="flex items-center mb-3"> {/* Step 3: Reduce margin */}
                 <Sliders className="h-5 w-5 text-quantum-accent mr-2" />
-                <h2 className="text-xl font-bold">Quantum Matrix</h2>
+                <h2 className="text-lg font-bold">Quantum Matrix</h2> {/* Compactness: text-lg */}
               </div>
               
               <div className="h-60 neumorph rounded-xl flex items-center justify-center">
-                <div className="text-quantum-accent text-center w-full p-4">
-                  <div className="text-xl mb-2">Quantum Matrix Processor</div>
-                  <div className="text-sm text-quantum-muted mb-4">
+                <div className="text-quantum-accent text-center w-full p-3"> {/* Step 3: Reduce padding */}
+                  <div className="text-lg mb-1">Quantum Matrix Processor</div> {/* Compactness: text-lg, mb-1 */}
+                  <div className="text-xs text-quantum-muted mb-2"> {/* Compactness: text-xs, mb-2 */}
                     Generate quantum sound patterns with matrix operations
                   </div>
                   
                   {/* XY Pad moved directly into the matrix panel */}
-                  <div className="h-32 mt-2">
+                  <div className="h-32 mt-1"> {/* Step 3: Reduce margin */}
                     <QuantumPad
                       xLabel="Decoherence"
                       yLabel="Amplitude"
@@ -654,10 +736,10 @@ const Index = () => {
             </div>
             
             {/* Quantum Controls Panel - MOVED DOWN */}
-            <div className="neumorph p-4 rounded-xl">
-              <div className="flex items-center mb-4">
+            <div className="neumorph p-3 rounded-xl"> {/* Step 3: Reduce padding */}
+              <div className="flex items-center mb-3"> {/* Step 3: Reduce margin */}
                 <Atom className="h-5 w-5 text-quantum-accent mr-2" />
-                <h2 className="text-xl font-bold">Quantum Parameters</h2>
+                <h2 className="text-lg font-bold">Quantum Parameters</h2> {/* Compactness: text-lg */}
               </div>
               
               <QuantumControls 
@@ -665,7 +747,8 @@ const Index = () => {
               />
             </div>
             
-            {/* Advanced Audio Controls Toggle Button */}
+            {/* Advanced Audio Controls Toggle Button - REMOVED as per Step 2 */}
+            {/* 
             <button
               onClick={toggleAdvancedAudio}
               className="w-full neumorph p-3 rounded-xl flex items-center justify-center gap-2"
@@ -673,8 +756,10 @@ const Index = () => {
               <Volume2 className="h-5 w-5 text-quantum-accent" />
               <span>{showAdvancedAudio ? "Hide Advanced Audio Controls" : "Show Advanced Audio Controls"}</span>
             </button>
+            */}
             
-            {/* Advanced Audio Controls (conditionally shown) */}
+            {/* Advanced Audio Controls (conditionally shown) - REMOVED and integrated above */}
+            {/* 
             {showAdvancedAudio && (
               <div className="neumorph p-4 rounded-xl">
                 <div className="flex items-center mb-4">
@@ -688,11 +773,12 @@ const Index = () => {
                 />
               </div>
             )}
+            */}
           </div>
 
           {/* Right column - Audio Output and Analysis */}
-          <div className="neumorph p-4 rounded-xl lg:col-span-2">
-            <div className="flex items-center mb-4">
+          <div className="neumorph p-3 rounded-xl lg:col-span-2"> {/* Step 3: Reduce padding */}
+            <div className="flex items-center mb-3"> {/* Step 3: Reduce margin */}
               <Radio className="h-5 w-5 text-quantum-accent mr-2" />
               <h2 className="text-xl font-bold">Quantum Audio Output</h2>
             </div>

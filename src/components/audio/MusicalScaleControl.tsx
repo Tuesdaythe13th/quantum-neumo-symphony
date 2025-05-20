@@ -26,43 +26,44 @@ const MusicalScaleControl: React.FC<MusicalScaleControlProps> = ({
   musicalScales
 }) => {
   return (
-    <div className="neumorph p-4 rounded-lg">
-      <div className="flex items-center gap-2 mb-4">
-        <Music className="w-5 h-5 text-quantum-accent" />
-        <h3 className="text-lg font-medium">Musical Scale Mapping</h3>
+    <div className="neumorph p-3 rounded-lg"> {/* Step 4: Reduce padding */}
+      <div className="flex items-center gap-2 mb-2"> {/* Step 4: Reduce mb */}
+        <Music className="w-4 h-4 text-quantum-accent" /> {/* Step 4: Smaller icon */}
+        <h3 className="text-sm font-medium">Musical Scale Mapping</h3> {/* Step 4: Smaller text */}
       </div>
       
-      <div className="flex items-center justify-between mb-4">
-        <Label htmlFor="enable-scale">Enable Musical Scale Quantization</Label>
+      <div className="flex items-center justify-between mb-3"> {/* Step 4: Reduce mb */}
+        <Label htmlFor="enable-scale" className="text-xs">Enable Musical Scale Quantization</Label> {/* Step 4: Smaller text */}
         <Switch 
           id="enable-scale" 
           checked={settings.enableMusicalScale}
           onCheckedChange={(checked) => onChange('enableMusicalScale', checked)}
+          // Consider scale-75 or scale-90 if Switch component supports it or custom CSS for smaller switch
         />
       </div>
       
       {settings.enableMusicalScale && (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="scale-type">Musical Scale</Label>
+        <div className="space-y-3"> {/* Step 4: Reduce space-y */}
+          <div className="space-y-1"> {/* Step 4: Reduce space-y */}
+            <Label htmlFor="scale-type" className="text-xs">Musical Scale</Label> {/* Step 4: Smaller text */}
             <Select 
               value={settings.scaleType}
               onValueChange={(value) => onChange('scaleType', value)}
             >
-              <SelectTrigger id="scale-type">
+              <SelectTrigger id="scale-type" className="text-xs h-8"> {/* Step 4: Smaller text, height */}
                 <SelectValue placeholder="Select scale" />
               </SelectTrigger>
               <SelectContent>
                 {musicalScales.map(scale => (
-                  <SelectItem key={scale.value} value={scale.value}>{scale.label}</SelectItem>
+                  <SelectItem key={scale.value} value={scale.value} className="text-xs">{scale.label}</SelectItem> /* Step 4: Smaller text */
                 ))}
               </SelectContent>
             </Select>
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-1"> {/* Step 4: Reduce space-y */}
             <div className="flex items-center justify-between">
-              <Label>
+              <Label className="text-xs"> {/* Step 4: Smaller text */}
                 Scale Root Note: {settings.rootNote} 
                 {settings.rootNote === 48 && " (C3)"}
                 {settings.rootNote === 60 && " (C4)"}
@@ -77,28 +78,28 @@ const MusicalScaleControl: React.FC<MusicalScaleControlProps> = ({
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="qpixl-note-select">QPIXL Index for Note Choice</Label>
+          <div className="space-y-1"> {/* Step 4: Reduce space-y */}
+            <Label htmlFor="qpixl-note-select" className="text-xs">QPIXL Index for Note Choice</Label> {/* Step 4: Smaller text */}
             <Select 
               value={settings.qpixlNoteSelectionMethod}
               onValueChange={(value) => onChange('qpixlNoteSelectionMethod', value)}
             >
-              <SelectTrigger id="qpixl-note-select">
+              <SelectTrigger id="qpixl-note-select" className="text-xs h-8"> {/* Step 4: Smaller text, height */}
                 <SelectValue placeholder="Select method" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="First QPIXL Value">First QPIXL Value</SelectItem>
-                <SelectItem value="Average QPIXL Value">Average QPIXL Value</SelectItem>
-                <SelectItem value="Random QPIXL Value">Random QPIXL Value per Note/Event</SelectItem>
+                <SelectItem value="First QPIXL Value" className="text-xs">First QPIXL Value</SelectItem> {/* Step 4: Smaller text */}
+                <SelectItem value="Average QPIXL Value" className="text-xs">Average QPIXL Value</SelectItem> {/* Step 4: Smaller text */}
+                <SelectItem value="Random QPIXL Value" className="text-xs">Random QPIXL Value per Note/Event</SelectItem> {/* Step 4: Smaller text */}
               </SelectContent>
             </Select>
           </div>
           
           {(settings.scaleType === 'Microtonal QPIXL (Octave Segmented)' || 
             settings.scaleType === 'Microtonal QPIXL (Full Range)') && (
-            <div className="space-y-2">
+            <div className="space-y-1"> {/* Step 4: Reduce space-y */}
               <div className="flex items-center justify-between">
-                <Label>Microtonal Range (Octaves): {settings.microtonalOctaveRange}</Label>
+                <Label className="text-xs">Microtonal Range (Octaves): {settings.microtonalOctaveRange}</Label> {/* Step 4: Smaller text */}
               </div>
               <Slider 
                 min={1} 
