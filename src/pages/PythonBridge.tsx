@@ -2,11 +2,13 @@
 import React, { useState } from "react";
 import { Wifi, Play, Settings as SettingsIconLucide, Info } from "lucide-react";
 import QuantumSynestheticViz from "@/components/QuantumSynestheticViz";
+import PythonCodeDisplay from "@/components/PythonCodeDisplay";
 
 const PythonBridge = () => {
   const [wsPort, setWsPort] = useState<number>(8765);
   const [isPythonCommandCopied, setIsPythonCommandCopied] = useState(false);
   const [isHtmlCommandCopied, setIsHtmlCommandCopied] = useState(false);
+  const [showCode, setShowCode] = useState(false);
 
   const pythonDemoCommand = `python qpixl_synesthetic_bridge.py --mode demo --ws-port ${wsPort}`;
   const pythonHtmlCommand = `python qpixl_synesthetic_bridge.py --mode html --ws-port ${wsPort}`;
@@ -69,9 +71,11 @@ const PythonBridge = () => {
         </div>
       </div>
       {/* Main Visualizer Area */}
-      <div className="flex-1 overflow-hidden bg-black">
+      <div className="flex-1 overflow-auto bg-black">
         {(wsPort > 1023 && wsPort < 65536) ? (
-          <QuantumSynestheticViz wsPort={wsPort} />
+          <div className="h-full">
+            <QuantumSynestheticViz wsPort={wsPort} />
+          </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <div className="bg-gray-800/80 p-8 rounded-xl border border-purple-700/60 max-w-md text-center">
@@ -85,11 +89,20 @@ const PythonBridge = () => {
         )}
       </div>
       {/* Instructions Panel */}
-      <div className="bg-gray-900/70 backdrop-blur-lg border-t border-purple-800/60 p-4 max-h-60 overflow-y-auto text-sm">
-        <h2 className="text-lg font-semibold text-purple-300 mb-3 flex items-center gap-2">
-          <Play size={20} className="text-green-400"/>
-          Demo Instructions
-        </h2>
+      <div className="bg-gray-900/70 backdrop-blur-lg border-t border-purple-800/60 p-4 max-h-[500px] overflow-y-auto text-sm">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-semibold text-purple-300 flex items-center gap-2">
+            <Play size={20} className="text-green-400"/>
+            Demo Instructions
+          </h2>
+          <button 
+            onClick={() => setShowCode(!showCode)}
+            className="px-3 py-1 text-xs bg-purple-700 hover:bg-purple-600 rounded-md"
+          >
+            {showCode ? "Hide Code" : "Show QPIXL Code"}
+          </button>
+        </div>
+        
         <div className="bg-black/40 p-3 rounded-lg border border-gray-700/60 mb-3">
           <h3 className="text-sm font-semibold text-cyan-300 mb-2">Start Python Backend:</h3>
           <div className="bg-gray-800 p-2 rounded font-mono text-xs relative group">
@@ -126,6 +139,8 @@ const PythonBridge = () => {
             <li>Export frames to capture quantum art moments</li>
           </ul>
         </div>
+        
+        {showCode && <PythonCodeDisplay className="mt-4" />}
       </div>
     </div>
   );
