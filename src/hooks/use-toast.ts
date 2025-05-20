@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import type {
@@ -139,7 +140,12 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ ...props }: Toast) {
+// Add variant support for the toast function
+interface ToastOptions extends Toast {
+  variant?: "default" | "destructive"
+}
+
+function toast(options: ToastOptions) {
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -152,7 +158,7 @@ function toast({ ...props }: Toast) {
   dispatch({
     type: "ADD_TOAST",
     toast: {
-      ...props,
+      ...options,
       id,
       open: true,
       onOpenChange: (open) => {
@@ -167,6 +173,19 @@ function toast({ ...props }: Toast) {
     update,
   }
 }
+
+// Add convenience methods for different toast types
+toast.success = (content: string) => {
+  return toast({ title: content, variant: "default" });
+};
+
+toast.error = (content: string) => {
+  return toast({ title: content, variant: "destructive" });
+};
+
+toast.info = (content: string) => {
+  return toast({ title: content });
+};
 
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
