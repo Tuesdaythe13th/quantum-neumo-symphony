@@ -537,8 +537,8 @@ const Index = () => {
               color="#9b87f5"
               audioContext={audioContext}
               analyserNode={analyserNode}
-              qpixlData={engineAudioState?.qpixlDataForEngine}
-              temporalCoherence={advancedAudioSettings.qpixlTemporalCoherenceForVisualizer ?? (quantumSettings?.temporalCoherence ?? 50)}
+              qpixlData={pythonOutput.qpixlStateArray}
+              temporalCoherence={quantumSettings?.temporalCoherence ?? 50}
             />
           </div>
           

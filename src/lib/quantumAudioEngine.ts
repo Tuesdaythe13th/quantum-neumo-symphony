@@ -441,7 +441,6 @@ export class QuantumAudioEngine {
       quantumProbabilities: this.quantum_state,
       circuitData,
       qpixlData: this.qpixlData,
-      qpixlDataForEngine: this.qpixlData, // Add this so the engine output includes qpixlData for visualization
       spectralAnalysis,
       compressionMetrics
     };
