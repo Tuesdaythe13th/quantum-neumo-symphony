@@ -392,6 +392,35 @@ const Index = () => {
     setShowAdvancedAudio(!showAdvancedAudio);
   };
 
+  // Update the volume control section to use the advancedAudioSettings
+  const handleVolumeChange = (newVolume: number) => {
+    if (advancedAudioSettings) {
+      const updatedSettings: AdvancedAudioSettings = {
+        ...advancedAudioSettings,
+        masterVolume: newVolume
+      };
+      setAdvancedAudioSettings(updatedSettings);
+      quantumAudioEngine.setAdvancedAudioSettings(updatedSettings);
+    } else {
+      // Initialize with default settings if none exist
+      const defaultSettings: AdvancedAudioSettings = {
+        enableAdditive: false,
+        numPartials: 4,
+        harmonicControlMapping: 'Amplitudes',
+        harmonicSpreadFactor: 0.02,
+        harmonicAmplitudeProfile: '1/h',
+        enableMusicalScale: false,
+        scaleType: 'Chromatic',
+        rootNote: 48,
+        qpixlNoteSelectionMethod: 'First QPIXL Value',
+        microtonalOctaveRange: 2,
+        masterVolume: newVolume
+      };
+      setAdvancedAudioSettings(defaultSettings);
+      quantumAudioEngine.setAdvancedAudioSettings(defaultSettings);
+    }
+  };
+
   useEffect(() => {
     // Clean up audio context and timers when component unmounts
     return () => {
@@ -591,17 +620,7 @@ const Index = () => {
                       max="1" 
                       step="0.01" 
                       value={advancedAudioSettings?.masterVolume || 0.7}
-                      onChange={(e) => {
-                        const newVolume = parseFloat(e.target.value);
-                        setAdvancedAudioSettings(prev => ({
-                          ...prev || {},
-                          masterVolume: newVolume
-                        }));
-                        quantumAudioEngine.setAdvancedAudioSettings({
-                          ...(advancedAudioSettings || {}),
-                          masterVolume: newVolume
-                        });
-                      }}
+                      onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
                       className="w-full h-1 bg-quantum-light rounded-lg appearance-none cursor-pointer"
                     />
                   </div>

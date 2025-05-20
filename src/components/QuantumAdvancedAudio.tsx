@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Form, FormField, FormItem, FormControl, FormLabel, FormDescription } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { Volume, Music, Waveform, Gauge } from "lucide-react";
+import { Volume, Music, AudioWaveform, Gauge } from "lucide-react";
 
 // Define the types for our advanced audio settings
 export interface AdvancedAudioSettings {
@@ -110,7 +110,7 @@ const QuantumAdvancedAudio: React.FC<QuantumAdvancedAudioProps> = ({
       {/* Additive Synthesis Control Panel */}
       <div className="neumorph p-4 rounded-lg">
         <div className="flex items-center gap-2 mb-4">
-          <Waveform className="w-5 h-5 text-quantum-accent" />
+          <AudioWaveform className="w-5 h-5 text-quantum-accent" />
           <h3 className="text-lg font-medium">Additive Synthesis</h3>
         </div>
         
