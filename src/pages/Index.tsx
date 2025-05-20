@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Toaster } from "sonner";
 import { 
@@ -5,20 +6,33 @@ import {
   Volume2, Upload, Grid, Download
 } from "lucide-react";
 
-import QuantumControls, { QuantumSettings } from "@/components/QuantumControls";
+import QuantumControls from "@/components/QuantumControls";
 import VisualAnalyzer from "@/components/VisualAnalyzer";
 import QuantumPad from "@/components/QuantumPad";
 import DAWTransport from "@/components/DAWTransport";
-import QuantumAdvancedAudio, { AdvancedAudioSettings } from "@/components/QuantumAdvancedAudio";
+import QuantumAdvancedAudio from "@/components/QuantumAdvancedAudio";
 import { toast } from "sonner";
-import { quantumAudioEngine, QuantumAudioState } from "@/lib/quantumAudioEngine";
+import { quantumAudioEngine } from "@/lib/quantumAudioEngine";
+import { AdvancedAudioSettings, defaultSettings as defaultAdvancedSettings } from "@/types/advancedAudioTypes";
+import type { QuantumSettings } from "@/components/QuantumControls";
+
+// Define the audio state type
+interface QuantumAudioState {
+  audioBuffer: AudioBuffer | null;
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  quantumProbabilities: Record<string, number>;
+  circuitData: any;
+  qpixlData?: Float32Array;
+}
 
 const Index = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
   const [quantumSettings, setQuantumSettings] = useState<QuantumSettings | null>(null);
-  const [advancedAudioSettings, setAdvancedAudioSettings] = useState<AdvancedAudioSettings | null>(null);
+  const [advancedAudioSettings, setAdvancedAudioSettings] = useState<AdvancedAudioSettings>(defaultAdvancedSettings);
   const [currentTime, setCurrentTime] = useState<string>("00:00");
   const [totalTime, setTotalTime] = useState<string>("00:00");
   const [audioState, setAudioState] = useState<QuantumAudioState | null>(null);
@@ -403,21 +417,14 @@ const Index = () => {
       quantumAudioEngine.setAdvancedAudioSettings(updatedSettings);
     } else {
       // Initialize with default settings if none exist
-      const defaultSettings: AdvancedAudioSettings = {
-        enableAdditive: false,
-        numPartials: 4,
-        harmonicControlMapping: 'Amplitudes',
-        harmonicSpreadFactor: 0.02,
-        harmonicAmplitudeProfile: '1/h',
-        enableMusicalScale: false,
-        scaleType: 'Chromatic',
-        rootNote: 48,
-        qpixlNoteSelectionMethod: 'First QPIXL Value',
-        microtonalOctaveRange: 2,
+      setAdvancedAudioSettings({
+        ...defaultAdvancedSettings,
         masterVolume: newVolume
-      };
-      setAdvancedAudioSettings(defaultSettings);
-      quantumAudioEngine.setAdvancedAudioSettings(defaultSettings);
+      });
+      quantumAudioEngine.setAdvancedAudioSettings({
+        ...defaultAdvancedSettings,
+        masterVolume: newVolume
+      });
     }
   };
 
@@ -526,7 +533,7 @@ const Index = () => {
                 
                 <QuantumAdvancedAudio 
                   onChange={handleAdvancedAudioChange}
-                  initialSettings={advancedAudioSettings || undefined}
+                  initialSettings={advancedAudioSettings}
                 />
               </div>
             )}
