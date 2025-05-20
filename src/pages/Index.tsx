@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Toaster } from "sonner";
 import { 
@@ -584,6 +585,11 @@ const Index = () => {
             <Download className="h-5 w-5" />
           </button>
         </div>
+
+        {/* Instructions text - added here */}
+        <p className="text-white text-center text-sm mb-3 opacity-90 shadow-quantum-glow tracking-wide">
+          To begin, press QPIXL visualizer, toggle QPIXL integration on to load the data and then hit play! Experiment with the different sounds and hit play again if you lose coherence.
+        </p>
 
         {/* REARRANGED LAYOUT: Main content with Visualizer + Controls side by side */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
