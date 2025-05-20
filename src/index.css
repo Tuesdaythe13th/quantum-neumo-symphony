@@ -89,4 +89,30 @@
       linear-gradient(to right, rgba(76, 77, 110, 0.1) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(76, 77, 110, 0.1) 1px, transparent 1px);
   }
+  
+  /* Add new quantum-panel-neumorph class for consistent dark theming */
+  .quantum-panel-neumorph {
+    @apply bg-slate-900/80 backdrop-blur-sm border border-purple-900/30 rounded-xl shadow-lg;
+  }
+  
+  /* Add scrollbar styling */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 92, 246, 0.3) rgba(30, 30, 46, 0.2);
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: rgba(30, 30, 46, 0.2);
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(139, 92, 246, 0.3);
+    border-radius: 3px;
+  }
 }
