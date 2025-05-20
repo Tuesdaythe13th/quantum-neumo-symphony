@@ -5,22 +5,48 @@ import {
   Volume2, Upload, Grid, Download
 } from "lucide-react";
 
-import QuantumControls from "@/components/QuantumControls";
+// import QuantumControls from "@/components/QuantumControls"; // Removed
 import VisualAnalyzer from "@/components/VisualAnalyzer";
 import QuantumPad from "@/components/QuantumPad";
+import QuantumKnob from "@/components/QuantumKnob"; // Added
+import QuantumSlider from "@/components/QuantumSlider"; // Added
+import QuantumSwitch from "@/components/QuantumSwitch"; // Added
+import WaveSelector from "@/components/WaveSelector"; // Added
+import SpectralMappingSelector from "@/components/SpectralMappingSelector"; // Added
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"; // Added for control grouping
 import DAWTransport from "@/components/DAWTransport";
 import QuantumAdvancedAudio from "@/components/QuantumAdvancedAudio";
 import { toast } from "sonner";
 import { quantumAudioEngine } from "@/lib/quantumAudioEngine";
 import { AdvancedAudioSettings, defaultSettings as defaultAdvancedSettings } from "@/types/advancedAudioTypes";
-import type { QuantumSettings } from "@/components/QuantumControls";
+import type { QuantumSettings, SpectralMode } from "@/components/QuantumControls"; // Import SpectralMode
 import { QuantumAudioState } from "@/types/quantum";
+
+// Default initial settings for QuantumControls, to be used in Index.tsx state
+const initialQuantumSettings: QuantumSettings = {
+  qubits: 4,
+  shots: 1024,
+  entanglement: 50,
+  superposition: 75,
+  gateType: "H", // Default gateType, can be made configurable if needed
+  waveform: "sine",
+  reverb: true,
+  reverbMix: 30,
+  chorus: false,
+  stereo: true,
+  quantumFilter: 60,
+  qpixlIntegration: false,
+  spectralMapping: "freq_qubits",
+  temporalCoherence: 50,
+  quantumHarmony: false,
+  compressionThreshold: 30,
+};
 
 const Index = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
-  const [quantumSettings, setQuantumSettings] = useState<QuantumSettings | null>(null);
+  const [quantumSettings, setQuantumSettings] = useState<QuantumSettings>(initialQuantumSettings); // Initialize with full settings
   const [advancedAudioSettings, setAdvancedAudioSettings] = useState<AdvancedAudioSettings>(defaultAdvancedSettings);
   const [currentTime, setCurrentTime] = useState<string>("00:00");
   const [totalTime, setTotalTime] = useState<string>("00:00");
@@ -86,11 +112,10 @@ const Index = () => {
 
   // Add new function to update visualization only without full audio generation
   const updateVisualizationOnly = async () => {
-    if (!quantumSettings) return;
-    
+    // No need for `if (!quantumSettings) return;` anymore as it's initialized
     try {
       // Generate QPIXL data immediately when controls change
-      const quantumState = await quantumAudioEngine.generateQuantumSound(quantumSettings);
+      const quantumState = await quantumAudioEngine.generateQuantumSound(quantumSettings); // quantumSettings is now guaranteed to be non-null
       
       if (quantumState.qpixlData) {
         // Update python output with new QPIXL data
@@ -123,11 +148,7 @@ const Index = () => {
 
   // Full generation pipeline combining Python and JS engines
   const triggerFullGenerationPipeline = async () => {
-    if (!quantumSettings) {
-      toast.error("No quantum settings configured");
-      return null;
-    }
-    
+    // No need for `if (!quantumSettings)` check as it's initialized
     try {
       // Step 1: Get Python-processed QPIXL data
       const { qpixlStateValues, mockPythonAnalysis } = await mockPythonProcess();
@@ -143,10 +164,10 @@ const Index = () => {
       quantumAudioEngine.setQpixlData(qpixlStateArrayFromPython); // Set QPIXL data on engine
       
       // Step 3: Generate quantum audio
-      const result = await quantumAudioEngine.generateQuantumSound(quantumSettings);
+      const result = await quantumAudioEngine.generateQuantumSound(quantumSettings); // quantumSettings is non-null
       setEngineAudioState(result); // This includes qpixlDataForEngine
       
-      if (quantumSettings.qpixlIntegration) {
+      if (quantumSettings.qpixlIntegration) { // quantumSettings is non-null
         setVisualizerType("qpixl");
         setTemporalCoherence(quantumSettings.temporalCoherence);
       }
@@ -230,10 +251,11 @@ const Index = () => {
 
   // New function for continuous playback
   const handleContinuousPlay = async () => {
-    if (!isPlaying || !quantumSettings) { // Ensure quantumSettings exist for generation
-      setIsPlaying(false); // Stop if settings are missing
+    if (!isPlaying) { 
+      setIsPlaying(false); 
       return;
     }
+    // quantumSettings is guaranteed to be non-null here
     
     // Always generate new audio for continuous play based on current settings
     const generationResult = await generateQuantumAudio(); 
@@ -290,34 +312,41 @@ const Index = () => {
 
   // Add new useEffect to update visualization on quantum settings change
   useEffect(() => {
-    if (quantumSettings) {
-      // Check if qpixlIntegration has changed
-      if (prevQpixlIntegrationRef.current !== undefined && 
-          quantumSettings.qpixlIntegration !== prevQpixlIntegrationRef.current) {
-        if (quantumSettings.qpixlIntegration) {
-          toast.info("QPIXL Integration Enabled! Select the 'QPIXL' visualizer type to see the effect.", {
-            duration: 5000, // Keep the toast visible for a bit longer
-          });
-        } else {
-          toast.info("QPIXL Integration Disabled.");
-        }
+    // quantumSettings is now initialized, so it's always an object.
+    // Check if qpixlIntegration has changed
+    if (prevQpixlIntegrationRef.current !== undefined && 
+        quantumSettings.qpixlIntegration !== prevQpixlIntegrationRef.current) {
+      if (quantumSettings.qpixlIntegration) {
+        toast.info("QPIXL Integration Enabled! Select the 'QPIXL' visualizer type to see the effect.", {
+          duration: 5000, // Keep the toast visible for a bit longer
+        });
+      } else {
+        toast.info("QPIXL Integration Disabled.");
       }
-      
-      // Update previous qpixlIntegration value
-      prevQpixlIntegrationRef.current = quantumSettings.qpixlIntegration;
-      
-      lastSettingsRef.current = quantumSettings;
-      updateVisualizationOnly(); // This updates visualizer immediately!
     }
+    
+    // Update previous qpixlIntegration value
+    prevQpixlIntegrationRef.current = quantumSettings.qpixlIntegration;
+    
+    // Store the current quantumSettings in lastSettingsRef for comparison in the next effect
+    // This ensures that the settings comparison logic remains valid.
+    // The visual update will also use the latest quantumSettings.
+    lastSettingsRef.current = quantumSettings; 
+    updateVisualizationOnly(); // This updates visualizer immediately!
+    
   }, [quantumSettings]);
 
   // Effect to regenerate audio when settings change while playing
   useEffect(() => {
+    const currentSettingsString = JSON.stringify(quantumSettings);
+    const lastSettingsString = JSON.stringify(lastSettingsRef.current); // This ref is updated in the previous useEffect
+    const currentAdvancedSettingsString = JSON.stringify(advancedAudioSettings);
+    const lastAdvancedSettingsString = JSON.stringify(lastAdvancedSettingsRef.current);
+
     if (isPlaying && 
         (
-          (quantumSettings && JSON.stringify(quantumSettings) !== JSON.stringify(lastSettingsRef.current))
-          || 
-          (advancedAudioSettings && JSON.stringify(advancedAudioSettings) !== JSON.stringify(lastAdvancedSettingsRef.current))
+          (currentSettingsString !== lastSettingsString) || 
+          (currentAdvancedSettingsString !== lastAdvancedSettingsString)
         )
        ) {
       const regenerateAudio = async () => {
@@ -327,10 +356,28 @@ const Index = () => {
           quantumAudioEngine.play(result.audioBuffer, true); // true for seamless transition
         }
       };
-      
       regenerateAudio();
     }
+    
+    // After potential regeneration or if not playing, update the refs for the next render.
+    // This was potentially missing: lastSettingsRef should always reflect the *processed* settings
+    // However, the above useEffect for quantumSettings already updates lastSettingsRef.current = quantumSettings;
+    // We need to ensure lastAdvancedSettingsRef is also kept up to date.
+    if (currentAdvancedSettingsString !== lastAdvancedSettingsString) {
+       lastAdvancedSettingsRef.current = advancedAudioSettings;
+    }
+    // lastSettingsRef is updated in the quantumSettings specific useEffect.
+
   }, [quantumSettings, advancedAudioSettings, isPlaying]);
+
+
+  // Helper function to update quantumSettings, mimicking updateSettings from QuantumControls
+  const handleQuantumSettingChange = <K extends keyof QuantumSettings>(
+    key: K,
+    value: QuantumSettings[K]
+  ) => {
+    setQuantumSettings(prev => ({ ...prev, [key]: value }));
+  };
 
   const handleSave = () => {
     toast.success("Preset saved");
@@ -589,200 +636,271 @@ const Index = () => {
       </header>
 
       {/* Main DAW Interface */}
-      <div className="neumorph p-6 rounded-xl">
-        {/* Transport Controls */}
-        <div className="flex justify-between items-center mb-6">
+      <div className="neumorph p-4 rounded-xl"> {/* Reduced padding for main container */}
+        {/* Row 1: Transport Controls */}
+        <div className="flex justify-between items-center mb-4"> {/* Reduced mb */}
           <DAWTransport
             onPlay={handlePlay}
             onStop={handleStop}
             onSave={handleSave}
             onExport={handleExport}
-            onSettings={handleSettings}
+            onSettings={handleSettings} // This might need a new home or to be a modal
             isPlaying={isPlaying}
             className="flex-grow"
           />
-          
-          <button
-            onClick={handleUpload}
-            className="neumorph-button p-3 rounded-full ml-2"
-            title="Upload MIDI or Audio File"
-          >
-            <Upload className="h-5 w-5" />
-          </button>
-          
-          <button
-            onClick={handleExport}
-            className="neumorph-button p-3 rounded-full ml-2"
-            title="Export Audio"
-          >
-            <Download className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* New Parent Div for Visualizer and Advanced Audio - Step 1 */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6"> {/* Step 1: Apply grid/flex for side-by-side */}
-          
-          {/* Visualizer Section - lg:col-span-3 */}
-          <div className="neumorph p-3 rounded-xl lg:col-span-3"> {/* Step 3: Reduce padding */}
-            <div className="flex items-center mb-3"> {/* Step 3: Reduce margin */}
-              <AudioWaveform className="h-5 w-5 text-quantum-accent mr-2" />
-              <h2 className="text-lg font-bold">Quantum Visualizer</h2> {/* Compactness: text-lg */}
-            </div>
-            
-            <div className="h-60 rounded-xl overflow-hidden"> {/* Consider adjusting height if needed */}
-              <VisualAnalyzer 
-                type={visualizerType}
-                color="#9b87f5"
-                audioContext={audioContext}
-                analyserNode={analyserNode}
-                qpixlData={pythonOutput.qpixlStateArray}
-                temporalCoherence={quantumSettings?.temporalCoherence ?? 50}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3"> {/* Step 3: Reduce margin */}
-              <button 
-                className={`${visualizerType === 'waveform' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-1 text-xs p-1.5`} // Compactness
-                onClick={() => setVisualizerType('waveform')}
-              >
-                <AudioWaveform className="h-3.5 w-3.5" /> {/* Compactness */}
-                <span className="hidden sm:inline">Waveform</span>
-              </button>
-              <button 
-                className={`${visualizerType === 'frequency' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-1 text-xs p-1.5`} // Compactness
-                onClick={() => setVisualizerType('frequency')}
-              >
-                <Volume2 className="h-3.5 w-3.5" /> {/* Compactness */}
-                <span className="hidden sm:inline">Spectrum</span>
-              </button>
-              <button 
-                className={`${visualizerType === 'quantum' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-1 text-xs p-1.5`} // Compactness
-                onClick={() => setVisualizerType('quantum')}
-              >
-                <Atom className="h-3.5 w-3.5" /> {/* Compactness */}
-                <span className="hidden sm:inline">Quantum</span>
-              </button>
-              <button 
-                className={`${visualizerType === 'qpixl' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-1 text-xs p-1.5`} // Compactness
-                onClick={() => setVisualizerType('qpixl')}
-              >
-                <Grid className="h-3.5 w-3.5" /> {/* Compactness */}
-                <span className="hidden sm:inline">QPIXL</span>
-              </button>
-            </div>
-            {/* QPIXL Status Indicator */}
-            <div className="mt-1.5 text-center"> {/* Step 3: Reduce margin */}
-              {(() => {
-                if (visualizerType === 'qpixl') {
-                  if (pythonOutput.qpixlStateArray && pythonOutput.qpixlStateArray.length > 0) {
-                    return <span className="text-xs font-medium text-green-400">Status: QPIXL Data Loaded</span>;
-                  } else {
-                    return <span className="text-xs font-medium text-yellow-400">Status: QPIXL Active - No Data</span>;
-                  }
-                } else {
-                  if (quantumSettings && !quantumSettings.qpixlIntegration) {
-                    return <span className="text-xs font-medium text-gray-500">Status: QPIXL Integration Disabled</span>;
-                  }
-                  return <span className="text-xs font-medium text-gray-500">Status: QPIXL Inactive</span>;
-                }
-              })()}
-            </div>
-          </div>
-
-          {/* Advanced Audio Synthesis Section - lg:col-span-2 */}
-          {/* Step 2: Advanced controls always visible */}
-          <div className="neumorph p-3 rounded-xl lg:col-span-2"> {/* Step 3: Reduce padding */}
-            <div className="flex items-center mb-3"> {/* Step 3: Reduce margin */}
-              <Volume2 className="h-5 w-5 text-quantum-accent mr-2" />
-              <h2 className="text-lg font-bold">Advanced Audio Synthesis</h2> {/* Compactness: text-lg */}
-            </div>
-            {/* QuantumAdvancedAudio is now always visible */}
-            <QuantumAdvancedAudio 
-              onChange={handleAdvancedAudioChange}
-              initialSettings={advancedAudioSettings}
-            />
-          </div>
-        </div>
-
-        {/* Main Interface Grid (Remaining items) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4"> {/* Step 3: Potentially adjust mt if needed */}
-          {/* Control Panels - REARRANGED: Matrix first, then Quantum Controls */}
-          <div className="space-y-4"> {/* Step 3: Reduce space-y */}
-            {/* Matrix - MOVED UP */}
-            <div className="neumorph p-3 rounded-xl"> {/* Step 3: Reduce padding */}
-              <div className="flex items-center mb-3"> {/* Step 3: Reduce margin */}
-                <Sliders className="h-5 w-5 text-quantum-accent mr-2" />
-                <h2 className="text-lg font-bold">Quantum Matrix</h2> {/* Compactness: text-lg */}
-              </div>
-              
-              <div className="h-60 neumorph rounded-xl flex items-center justify-center">
-                <div className="text-quantum-accent text-center w-full p-3"> {/* Step 3: Reduce padding */}
-                  <div className="text-lg mb-1">Quantum Matrix Processor</div> {/* Compactness: text-lg, mb-1 */}
-                  <div className="text-xs text-quantum-muted mb-2"> {/* Compactness: text-xs, mb-2 */}
-                    Generate quantum sound patterns with matrix operations
-                  </div>
-                  
-                  {/* XY Pad moved directly into the matrix panel */}
-                  <div className="h-32 mt-1"> {/* Step 3: Reduce margin */}
-                    <QuantumPad
-                      xLabel="Decoherence"
-                      yLabel="Amplitude"
-                      onChange={handleQuantumPadChange}
-                      className="h-full w-full"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Quantum Controls Panel - MOVED DOWN */}
-            <div className="neumorph p-3 rounded-xl"> {/* Step 3: Reduce padding */}
-              <div className="flex items-center mb-3"> {/* Step 3: Reduce margin */}
-                <Atom className="h-5 w-5 text-quantum-accent mr-2" />
-                <h2 className="text-lg font-bold">Quantum Parameters</h2> {/* Compactness: text-lg */}
-              </div>
-              
-              <QuantumControls 
-                onChange={setQuantumSettings}
-              />
-            </div>
-            
-            {/* Advanced Audio Controls Toggle Button - REMOVED as per Step 2 */}
-            {/* 
+          <div className="flex gap-2"> {/* Group upload/download for compactness */}
             <button
-              onClick={toggleAdvancedAudio}
-              className="w-full neumorph p-3 rounded-xl flex items-center justify-center gap-2"
+              onClick={handleUpload}
+              className="neumorph-button p-2.5 rounded-full" /* Reduced padding */
+              title="Upload MIDI or Audio File"
             >
-              <Volume2 className="h-5 w-5 text-quantum-accent" />
-              <span>{showAdvancedAudio ? "Hide Advanced Audio Controls" : "Show Advanced Audio Controls"}</span>
+              <Upload className="h-4 w-4" /> {/* Reduced icon size */}
             </button>
-            */}
-            
-            {/* Advanced Audio Controls (conditionally shown) - REMOVED and integrated above */}
-            {/* 
-            {showAdvancedAudio && (
-              <div className="neumorph p-4 rounded-xl">
-                <div className="flex items-center mb-4">
-                  <Volume2 className="h-5 w-5 text-quantum-accent mr-2" />
-                  <h2 className="text-xl font-bold">Advanced Audio Synthesis</h2>
+            <button
+              onClick={handleExport}
+              className="neumorph-button p-2.5 rounded-full" /* Reduced padding */
+              title="Export Audio"
+            >
+              <Download className="h-4 w-4" /> {/* Reduced icon size */}
+            </button>
+          </div>
+        </div>
+
+        {/* Row 2: Main Content Grid (Visualizer, Controls, Analysis) */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          
+          {/* Column 1: Core Controls & Matrix (lg:col-span-1) */}
+          <div className="lg:col-span-1 space-y-3">
+            {/* Core Quantum Parameters */}
+            <div className="neumorph p-3 rounded-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <Atom className="w-4 h-4 text-quantum-accent" />
+                <h3 className="text-sm font-medium">Core Synthesis</h3>
+              </div>
+              <div className="space-y-3">
+                <QuantumSlider label="Qubits" value={quantumSettings.qubits} min={2} max={8} step={1} onChange={(value) => handleQuantumSettingChange("qubits", value)} />
+                <QuantumSlider label="Shots" value={quantumSettings.shots} min={256} max={4096} step={256} onChange={(value) => handleQuantumSettingChange("shots", value)} />
+                <div className="grid grid-cols-3 gap-3">
+                  <QuantumKnob label="Entanglement" value={quantumSettings.entanglement} min={0} max={100} onChange={(value) => handleQuantumSettingChange("entanglement", value)} />
+                  <QuantumKnob label="Superposition" value={quantumSettings.superposition} min={0} max={100} onChange={(value) => handleQuantumSettingChange("superposition", value)} />
+                  <QuantumKnob label="Q-Filter" value={quantumSettings.quantumFilter} min={0} max={100} onChange={(value) => handleQuantumSettingChange("quantumFilter", value)} />
                 </div>
-                
-                <QuantumAdvancedAudio 
-                  onChange={handleAdvancedAudioChange}
-                  initialSettings={advancedAudioSettings}
+              </div>
+            </div>
+
+            {/* Waveform Selector */}
+            <div className="neumorph p-3 rounded-xl">
+               <WaveSelector value={quantumSettings.waveform} onChange={(value) => handleQuantumSettingChange("waveform", value as "sine" | "square" | "triangle" | "sawtooth" | "quantumNoise")} />
+            </div>
+
+            {/* Quantum Matrix (XY Pad) */}
+            <div className="neumorph p-3 rounded-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <Sliders className="w-4 h-4 text-quantum-accent" />
+                <h3 className="text-sm font-medium">Quantum Matrix</h3>
+              </div>
+              <div className="h-48 neumorph rounded-lg flex items-center justify-center"> {/* Reduced height */}
+                <QuantumPad xLabel="Decoherence" yLabel="Amplitude" onChange={handleQuantumPadChange} className="h-full w-full p-2" />
+              </div>
+            </div>
+          </div>
+
+          {/* Column 2: Visualizer & Output (lg:col-span-2) */}
+          <div className="lg:col-span-2 space-y-3">
+            {/* Quantum Visualizer (Prominent) */}
+            <div className="neumorph p-3 rounded-xl h-[350px] lg:h-auto lg:flex-grow flex flex-col"> {/* Increased height, flex-grow */}
+              <div className="flex items-center gap-2 mb-2">
+                <AudioWaveform className="w-4 h-4 text-quantum-accent" />
+                <h3 className="text-sm font-medium">Quantum Visualizer</h3>
+              </div>
+              <div className="flex-grow rounded-lg overflow-hidden min-h-[200px]"> {/* Ensure visualizer canvas can grow */}
+                <VisualAnalyzer 
+                  type={visualizerType}
+                  color="#9b87f5"
+                  audioContext={audioContext}
+                  analyserNode={analyserNode}
+                  qpixlData={pythonOutput.qpixlStateArray}
+                  temporalCoherence={quantumSettings.temporalCoherence}
                 />
               </div>
-            )}
-            */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                {[
+                  { type: "waveform", label: "Waveform", icon: AudioWaveform },
+                  { type: "frequency", label: "Spectrum", icon: Volume2 },
+                  { type: "quantum", label: "Quantum", icon: Atom },
+                  { type: "qpixl", label: "QPIXL", icon: Grid },
+                ].map(item => (
+                  <button key={item.type}
+                    className={`${visualizerType === item.type ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-1 text-xs p-1.5`}
+                    onClick={() => setVisualizerType(item.type as any)}
+                  >
+                    <item.icon className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="mt-1.5 text-center">
+                {(() => {
+                  if (visualizerType === 'qpixl') {
+                    if (pythonOutput.qpixlStateArray && pythonOutput.qpixlStateArray.length > 0) {
+                      return <span className="text-xs font-medium text-green-400">Status: QPIXL Data Loaded</span>;
+                    } else { return <span className="text-xs font-medium text-yellow-400">Status: QPIXL Active - No Data</span>; }
+                  } else {
+                    if (!quantumSettings.qpixlIntegration) { return <span className="text-xs font-medium text-gray-500">Status: QPIXL Integration Disabled</span>; }
+                    return <span className="text-xs font-medium text-gray-500">Status: QPIXL Inactive</span>;
+                  }
+                })()}
+              </div>
+            </div>
+
+            {/* Quantum Audio Output */}
+            <div className="neumorph p-3 rounded-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <Radio className="w-4 h-4 text-quantum-accent" />
+                <h3 className="text-sm font-medium">Audio Output</h3>
+              </div>
+              <div className="neumorph h-20 rounded-lg overflow-hidden mb-2"> {/* Reduced height */}
+                <VisualAnalyzer type="waveform" color="#9b87f5" audioContext={audioContext} analyserNode={analyserNode} />
+              </div>
+              <div className="flex items-center justify-between">
+                <button className={`${isPlaying ? "neumorph-active" : "neumorph"} p-2.5 rounded-full`} onClick={isPlaying ? handleStop : handlePlay}>
+                  <Play className="h-4 w-4" />
+                </button>
+                <div className="flex-1 mx-3">
+                  <div className="bg-quantum-light h-1 rounded-full overflow-hidden">
+                    <div className="bg-quantum-accent h-full" style={{ width: engineAudioState && engineAudioState.duration > 0 ? `${(parseFloat(currentTime.split(':')[0]) * 60 + parseFloat(currentTime.split(':')[1])) / engineAudioState.duration * 100}%` : "0%" }}></div>
+                  </div>
+                </div>
+                <div className="font-mono text-xs">{currentTime} / {totalTime}</div>
+              </div>
+            </div>
           </div>
 
-          {/* Right column - Audio Output and Analysis */}
-          <div className="neumorph p-3 rounded-xl lg:col-span-2"> {/* Step 3: Reduce padding */}
-            <div className="flex items-center mb-3"> {/* Step 3: Reduce margin */}
-              <Radio className="h-5 w-5 text-quantum-accent mr-2" />
-              <h2 className="text-xl font-bold">Quantum Audio Output</h2>
-            </div>
-            
+          {/* Column 3: Advanced Controls & Analysis (lg:col-span-1) */}
+          <div className="lg:col-span-1 space-y-3">
+            <Accordion type="multiple" defaultValue={["qpixl-controls", "effects-controls"]} className="w-full">
+              {/* QPIXL Controls */}
+              <AccordionItem value="qpixl-controls">
+                <AccordionTrigger className="text-sm font-medium p-3 hover:no-underline">QPIXL Settings</AccordionTrigger>
+                <AccordionContent className="p-1 pt-0 space-y-3">
+                  <div className="neumorph p-3 rounded-xl">
+                    <QuantumSwitch label="QPIXL Integration" value={quantumSettings.qpixlIntegration} onChange={(value) => handleQuantumSettingChange("qpixlIntegration", value)} />
+                  </div>
+                  {quantumSettings.qpixlIntegration && (
+                    <>
+                      <div className="neumorph p-3 rounded-xl">
+                        <QuantumSwitch label="Quantum Harmony" value={quantumSettings.quantumHarmony} onChange={(value) => handleQuantumSettingChange("quantumHarmony", value)} />
+                      </div>
+                      <div className="neumorph p-3 rounded-xl">
+                        <SpectralMappingSelector value={quantumSettings.spectralMapping} onChange={(value) => handleQuantumSettingChange("spectralMapping", value as SpectralMode)} />
+                      </div>
+                      <div className="neumorph p-3 rounded-xl space-y-3">
+                        <QuantumSlider label="Compression" value={quantumSettings.compressionThreshold} min={0} max={100} onChange={(value) => handleQuantumSettingChange("compressionThreshold", value)} unit="%" />
+                        <QuantumSlider label="Temporal Coherence" value={quantumSettings.temporalCoherence} min={0} max={100} onChange={(value) => handleQuantumSettingChange("temporalCoherence", value)} unit="%" />
+                      </div>
+                    </>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Effects Controls */}
+              <AccordionItem value="effects-controls">
+                <AccordionTrigger className="text-sm font-medium p-3 hover:no-underline">Audio Effects</AccordionTrigger>
+                <AccordionContent className="p-1 pt-0 space-y-3">
+                  <div className="neumorph p-3 rounded-xl grid grid-cols-2 gap-3">
+                     <QuantumSwitch label="Reverb" value={quantumSettings.reverb} onChange={(value) => handleQuantumSettingChange("reverb", value)} />
+                     <QuantumSwitch label="Chorus" value={quantumSettings.chorus} onChange={(value) => handleQuantumSettingChange("chorus", value)} />
+                     <QuantumSwitch label="Stereo" value={quantumSettings.stereo} onChange={(value) => handleQuantumSettingChange("stereo", value)} />
+                  </div>
+                  {quantumSettings.reverb && (
+                    <div className="neumorph p-3 rounded-xl">
+                      <QuantumSlider label="Reverb Mix" value={quantumSettings.reverbMix} min={0} max={100} onChange={(value) => handleQuantumSettingChange("reverbMix", value)} unit="%" />
+                    </div>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Advanced Audio Synthesis (already accordionized internally) */}
+              <AccordionItem value="advanced-audio">
+                 <AccordionTrigger className="text-sm font-medium p-3 hover:no-underline">Advanced Synthesis</AccordionTrigger>
+                 <AccordionContent className="p-1 pt-0">
+                    <QuantumAdvancedAudio onChange={handleAdvancedAudioChange} initialSettings={advancedAudioSettings} />
+                 </AccordionContent>
+              </AccordionItem>
+              
+              {/* Analysis Panels */}
+              <AccordionItem value="analysis-circuit">
+                <AccordionTrigger className="text-sm font-medium p-3 hover:no-underline">Circuit Analysis</AccordionTrigger>
+                <AccordionContent className="p-1 pt-0">
+                  <div className="neumorph p-3 rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sliders className="w-4 h-4 text-quantum-accent" />
+                      <h3 className="text-sm font-medium">Quantum Circuit</h3>
+                    </div>
+                    <div className="h-32 quantum-grid flex items-center justify-center rounded-lg text-xs"> {/* Reduced height */}
+                      {engineAudioState?.circuitData ? (
+                        <div className="text-center">
+                          <div>Circuit: {engineAudioState.circuitData.qubits} qubits</div>
+                          <div className="grid grid-cols-2 gap-1 mt-1">
+                            {Object.entries(engineAudioState.circuitData.gates || {}).slice(0, 4).map(([idx, gate]: [string, any], i) => (
+                              <div key={i} className="neumorph px-1.5 py-0.5 rounded text-xs"> {gate.type} @ q{gate.qubit || gate.target || 0}</div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : ( <p className="text-quantum-muted"> {quantumSettings ? `Circuit: ${quantumSettings.qubits} qubits, ${quantumSettings.shots} shots` : "No circuit"} </p> )}
+                    </div>
+                    {engineAudioState?.compressionMetrics && (
+                      <div className="mt-2">
+                        <h3 className="text-xs font-medium mb-1">Compression</h3>
+                        <div className="grid grid-cols-3 gap-1">
+                          {[{label: "Original", value: engineAudioState.compressionMetrics.originalComplexity?.toFixed(1)},
+                           {label: "Compressed", value: engineAudioState.compressionMetrics.compressedComplexity?.toFixed(1)},
+                           {label: "Ratio", value: (engineAudioState.compressionMetrics.compressionRatio ? engineAudioState.compressionMetrics.compressionRatio * 100 : 0).toFixed(0) + "%"}
+                          ].map(m => <div key={m.label} className="neumorph p-1.5 rounded text-center text-xs"><div className="text-quantum-muted text-[10px]">{m.label}</div><div>{m.value}</div></div>)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="analysis-measurement">
+                <AccordionTrigger className="text-sm font-medium p-3 hover:no-underline">Measurement Analysis</AccordionTrigger>
+                <AccordionContent className="p-1 pt-0">
+                   <div className="neumorph p-3 rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Radio className="w-4 h-4 text-quantum-accent" />
+                      <h3 className="text-sm font-medium">Measurement</h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {(engineAudioState && engineAudioState.quantumProbabilities ? Object.entries(engineAudioState.quantumProbabilities).slice(0, 4) : [["00",0.45],["01",0.25],["10",0.20],["11",0.10]]).map(([state, prob]: [string, any]) => (
+                        <div key={state} className="neumorph p-1.5 rounded flex flex-col items-center"><div className="font-mono">{state}</div><div className="text-quantum-accent">{(prob * 100).toFixed(0)}%</div></div>
+                      ))}
+                    </div>
+                    {engineAudioState?.spectralAnalysis && (
+                      <div className="mt-2">
+                        <h3 className="text-xs font-medium mb-1">Spectral</h3>
+                        <div className="neumorph p-2 rounded-lg h-16"> {/* Reduced height */}
+                          {engineAudioState.spectralAnalysis.amplitudes.length > 0 && (
+                            <div className="h-full flex items-end gap-px">
+                              {Array.from({ length: 24 }).map((_, i) => {
+                                const idx = Math.floor(i * engineAudioState.spectralAnalysis!.amplitudes.length / 24);
+                                const amp = engineAudioState.spectralAnalysis!.amplitudes[idx] || 0;
+                                return (<div key={i} className="flex-1 bg-quantum-accent" style={{ height: `${amp * 100}%` }} />);
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+        </div>
+      </div>
+      
             {/* Audio Output */}
             <div className="mt-4">
               <div className="neumorph h-32 rounded-xl overflow-hidden">
