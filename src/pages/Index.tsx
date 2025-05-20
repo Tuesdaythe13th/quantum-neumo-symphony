@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect, useRef } from "react";
-import { Toaster } from "sonner";
 import { 
   Atom, Radio, Sliders, AudioWaveform, Play, 
   Volume2, Upload, Grid, Download
@@ -11,7 +9,7 @@ import VisualAnalyzer from "@/components/VisualAnalyzer";
 import QuantumPad from "@/components/QuantumPad";
 import DAWTransport from "@/components/DAWTransport";
 import QuantumAdvancedAudio from "@/components/QuantumAdvancedAudio";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import { quantumAudioEngine } from "@/lib/quantumAudioEngine";
 import { AdvancedAudioSettings, defaultSettings as defaultAdvancedSettings } from "@/types/advancedAudioTypes";
 import type { QuantumSettings } from "@/components/QuantumControls";
