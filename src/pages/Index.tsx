@@ -587,7 +587,7 @@ const Index = () => {
         </div>
 
         {/* Instructions text - added here */}
-        <p className="text-white text-center text-sm mb-3 opacity-90 shadow-quantum-glow tracking-wide">
+        <p className="text-white text-left text-sm mb-3 opacity-90 shadow-quantum-glow tracking-wide">
           To begin, press QPIXL visualizer, toggle QPIXL integration on to load the data and then hit play! Experiment with the different sounds and hit play again if you lose coherence.
         </p>
 
