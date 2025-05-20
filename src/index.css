@@ -85,7 +85,7 @@
   }
 
   body {
-    @apply bg-quantum-bg text-white;
+    @apply bg-black text-white;
   }
 }
 

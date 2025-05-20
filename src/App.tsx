@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import PythonBridge from "./pages/PythonBridge";
 import NotFound from "./pages/NotFound";
+import SmokeBackground from "./components/SmokeBackground";
 
 const queryClient = new QueryClient();
 
@@ -14,6 +15,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+        <SmokeBackground />
         <Toaster />
         <BrowserRouter>
           <Routes>

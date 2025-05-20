@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Atom, Radio, Sliders, AudioWaveform, Play, 
@@ -530,7 +531,7 @@ const Index = () => {
   }, [audioContext]);
 
   return (
-    <div className="min-h-screen bg-quantum-bg text-white p-4 md:p-6 overflow-hidden">
+    <div className="min-h-screen text-white p-4 md:p-6 overflow-hidden relative z-10">
       {/* Remove the duplicate Toaster component as it's already in App.tsx */}
       
       {/* Hidden file input for uploads */}
