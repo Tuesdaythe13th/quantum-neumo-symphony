@@ -205,18 +205,21 @@ export class QuantumAudioEngine {
       sampleRate
     );
     
-    // Generate QPIXL data if enabled
+    // Generate QPIXL data if enabled and not already set externally
     let spectralAnalysis = null;
     let compressionMetrics = null;
     
     if (settings.qpixlIntegration) {
-      // Generate quantum-pixel mapping
-      const pixelDimensions = Math.pow(2, Math.min(4, settings.qubits - 2)); // Keep reasonable size
-      this.qpixlData = this.generateQPIXLData(
-        pixelDimensions, 
-        settings.spectralMapping, 
-        settings.temporalCoherence / 100
-      );
+      // If qpixlData is not already set externally, generate it
+      if (!this.qpixlData) {
+        // Generate quantum-pixel mapping
+        const pixelDimensions = Math.pow(2, Math.min(4, settings.qubits - 2)); // Keep reasonable size
+        this.qpixlData = this.generateQPIXLData(
+          pixelDimensions, 
+          settings.spectralMapping, 
+          settings.temporalCoherence / 100
+        );
+      }
       
       // If we're using QPIXL for audio generation, use it to modulate the audio
       if (settings.spectralMapping === "qpixl_bi") {
@@ -771,6 +774,10 @@ export class QuantumAudioEngine {
 
   public getQuantumState(): Record<string, number> {
     return this.quantum_state;
+  }
+
+  public setQpixlData(data: Float32Array | null): void {
+    this.qpixlData = data;
   }
 }
 
