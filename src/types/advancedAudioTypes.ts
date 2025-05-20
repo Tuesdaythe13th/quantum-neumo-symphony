@@ -17,9 +17,6 @@ export interface AdvancedAudioSettings {
   
   // Main Volume
   masterVolume: number;
-  
-  // Additional properties for visualizer
-  qpixlTemporalCoherenceForVisualizer?: number;
 }
 
 // Default settings
@@ -37,8 +34,4 @@ export const defaultSettings: AdvancedAudioSettings = {
   microtonalOctaveRange: 2,
   
   masterVolume: 0.7,
-  qpixlTemporalCoherenceForVisualizer: 50,
 };
-
-// Export as defaultAdvancedAudioSettings for better naming clarity
-export const defaultAdvancedAudioSettings = defaultSettings;
