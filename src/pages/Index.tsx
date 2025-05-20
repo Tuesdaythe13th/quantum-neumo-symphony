@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Toaster } from "sonner";
 import { 
@@ -15,6 +14,7 @@ import { toast } from "sonner";
 import { quantumAudioEngine } from "@/lib/quantumAudioEngine";
 import { AdvancedAudioSettings, defaultSettings as defaultAdvancedSettings } from "@/types/advancedAudioTypes";
 import type { QuantumSettings } from "@/components/QuantumControls";
+import { QuantumAudioState } from "@/types/quantum";
 
 // Define the audio state type
 interface QuantumAudioState {
@@ -717,19 +717,19 @@ const Index = () => {
                   <div className="neumorph p-2 rounded-lg text-center">
                     <div className="text-xs text-quantum-muted">Original</div>
                     <div className="text-sm font-medium">
-                      {audioState.compressionMetrics.originalComplexity.toFixed(2)}
+                      {audioState.compressionMetrics.originalComplexity?.toFixed(2)}
                     </div>
                   </div>
                   <div className="neumorph p-2 rounded-lg text-center">
                     <div className="text-xs text-quantum-muted">Compressed</div>
                     <div className="text-sm font-medium">
-                      {audioState.compressionMetrics.compressedComplexity.toFixed(2)}
+                      {audioState.compressionMetrics.compressedComplexity?.toFixed(2)}
                     </div>
                   </div>
                   <div className="neumorph p-2 rounded-lg text-center">
                     <div className="text-xs text-quantum-muted">Ratio</div>
                     <div className="text-sm font-medium">
-                      {(audioState.compressionMetrics.compressionRatio * 100).toFixed(1)}%
+                      {(audioState.compressionMetrics.compressionRatio ? audioState.compressionMetrics.compressionRatio * 100 : 0).toFixed(1)}%
                     </div>
                   </div>
                 </div>
@@ -797,7 +797,7 @@ const Index = () => {
                   </div>
                   
                   <div className="text-xs text-center mt-2 text-quantum-muted">
-                    {audioState.spectralAnalysis.harmonicRatios.length > 0 && (
+                    {audioState.spectralAnalysis.harmonicRatios?.length > 0 && (
                       <span>Harmony ratio: {audioState.spectralAnalysis.harmonicRatios[0].toFixed(2)}</span>
                     )}
                   </div>

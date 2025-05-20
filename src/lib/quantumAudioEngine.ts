@@ -1,5 +1,6 @@
 import { QuantumSettings } from "@/components/QuantumControls";
-import { AdvancedAudioSettings } from "@/components/QuantumAdvancedAudio";
+import type { AdvancedAudioSettings } from "@/types/advancedAudioTypes";
+import { QuantumAudioState, SpectralAnalysisData, CompressionMetricsData } from "@/types/quantum";
 
 export interface QuantumAudioState {
   audioBuffer: AudioBuffer | null;
