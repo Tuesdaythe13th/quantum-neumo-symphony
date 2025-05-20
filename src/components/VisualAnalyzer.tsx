@@ -103,6 +103,8 @@ const VisualAnalyzer = ({
       const offsetX = (width - gridSize * pixelSize) / 2;
       const offsetY = (height - gridSize * pixelSize) / 2;
 
+      // Removed the optimized grid line drawing loop.
+
       for (let row = 0; row < gridSize; row++) {
         for (let col = 0; col < gridSize; col++) {
           const index = row * gridSize + col;
@@ -119,6 +121,7 @@ const VisualAnalyzer = ({
           ctx.fillStyle = `hsla(${hue}, 70%, 60%, ${alpha})`;
           ctx.fillRect(xPos, yPos, pixelSize - 1, pixelSize - 1);
 
+          // Restore Per-Cell Borders
           ctx.strokeStyle = `hsla(${hue}, 50%, 40%, ${alpha * 0.5})`;
           ctx.lineWidth = 1;
           ctx.strokeRect(xPos, yPos, pixelSize - 1, pixelSize - 1);
@@ -127,11 +130,11 @@ const VisualAnalyzer = ({
 
       if (gridSize > 0) {
         ctx.shadowBlur = 10;
-        ctx.shadowColor = color; 
-        ctx.strokeStyle = color; 
+        ctx.shadowColor = color; // Use the component's 'color' prop
+        ctx.strokeStyle = color; // Use the component's 'color' prop
         ctx.lineWidth = 2;
         ctx.strokeRect(offsetX - 2, offsetY - 2, gridSize * pixelSize + 4, gridSize * pixelSize + 4);
-        ctx.shadowBlur = 0;
+        ctx.shadowBlur = 0; // Reset shadow
       }
     };
     
@@ -190,11 +193,11 @@ const VisualAnalyzer = ({
         
         ctx.stroke();
         
-        // Add glow effect
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = color;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
+        // Optimization 1: Remove glow effect
+        // ctx.shadowBlur = 15;
+        // ctx.shadowColor = color;
+        // ctx.stroke(); // This second stroke was for the shadow
+        // ctx.shadowBlur = 0;
       } else if (type === "frequency") {
         // Either get real frequency data or simulate it
         let data: Uint8Array;
@@ -211,12 +214,12 @@ const VisualAnalyzer = ({
         for (let i = 0; i < Math.min(data.length, 128); i++) {
           const barHeight = (data[i] / 255) * height;
           
-          // Create gradient
-          const gradient = ctx.createLinearGradient(0, height, 0, height - barHeight);
-          gradient.addColorStop(0, color);
-          gradient.addColorStop(1, 'rgba(155, 135, 245, 0.2)');
+          // Optimization 2: Remove gradient creation for frequency bars
+          // const gradient = ctx.createLinearGradient(0, height, 0, height - barHeight);
+          // gradient.addColorStop(0, color);
+          // gradient.addColorStop(1, 'rgba(155, 135, 245, 0.2)');
           
-          ctx.fillStyle = gradient;
+          ctx.fillStyle = color; // Use solid color
           ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
         }
       } else if (type === "quantum") {
@@ -277,11 +280,11 @@ const VisualAnalyzer = ({
           
           ctx.stroke();
           
-          // Glow effect
-          ctx.shadowBlur = 10;
-          ctx.shadowColor = `hsla(${hue}, 80%, 70%, 0.6)`;
-          ctx.stroke();
-          ctx.shadowBlur = 0;
+          // Optimization 1: Remove glow effect
+          // ctx.shadowBlur = 10;
+          // ctx.shadowColor = `hsla(${hue}, 80%, 70%, 0.6)`;
+          // ctx.stroke(); // This second stroke was for the shadow
+          // ctx.shadowBlur = 0;
         }
         
         // Add quantum particles
@@ -297,11 +300,12 @@ const VisualAnalyzer = ({
           
           // Draw quantum particle
           const radius = 3 + Math.sin(time * 3 + i) * 1.5;
-          const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-          gradient.addColorStop(0, 'rgba(196, 181, 253, 1)');
-          gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
+          // Optimization 3: Remove radial gradient for quantum particles
+          // const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+          // gradient.addColorStop(0, 'rgba(196, 181, 253, 1)');
+          // gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
           
-          ctx.fillStyle = gradient;
+          ctx.fillStyle = 'rgba(196, 181, 253, 0.7)'; // Use solid color
           ctx.beginPath();
           ctx.arc(x, y, radius, 0, Math.PI * 2);
           ctx.fill();
