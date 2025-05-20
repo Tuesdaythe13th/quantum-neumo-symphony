@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Toaster } from "sonner";
 import { 
@@ -70,9 +69,6 @@ const Index = () => {
       if (advancedAudioSettings) {
         quantumAudioEngine.setAdvancedAudioSettings(advancedAudioSettings);
       }
-      
-      // Here we could set external QPIXL data if we had it from a Python API
-      // quantumAudioEngine.setQpixlData(externalQpixlData);
       
       const result = await quantumAudioEngine.generateQuantumSound(quantumSettings);
       setAudioState(result);
