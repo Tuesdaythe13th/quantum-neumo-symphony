@@ -585,89 +585,106 @@ const Index = () => {
           </button>
         </div>
 
-        {/* Visualizer moved to the top */}
-        <div className="neumorph p-4 rounded-xl mb-6">
-          <div className="flex items-center mb-4">
-            <AudioWaveform className="h-5 w-5 text-quantum-accent mr-2" />
-            <h2 className="text-xl font-bold">Quantum Visualizer</h2>
+        {/* REARRANGED LAYOUT: Main content with Visualizer + Controls side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+          {/* Left Column: Visualizer + QPIXL Controls (8/12) */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Visualizer */}
+            <div className="neumorph p-4 rounded-xl">
+              <div className="flex items-center mb-4">
+                <AudioWaveform className="h-5 w-5 text-quantum-accent mr-2" />
+                <h2 className="text-xl font-bold">Quantum Visualizer</h2>
+              </div>
+              
+              <div className="h-60 rounded-xl overflow-hidden">
+                <VisualAnalyzer 
+                  type={visualizerType}
+                  color="#9b87f5"
+                  audioContext={audioContext}
+                  analyserNode={analyserNode}
+                  qpixlData={pythonOutput.qpixlStateArray}
+                  temporalCoherence={quantumSettings?.temporalCoherence ?? 50}
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 gap-2 mt-4">
+                <button 
+                  className={`${visualizerType === 'waveform' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
+                  onClick={() => setVisualizerType('waveform')}
+                >
+                  <AudioWaveform className="h-4 w-4" />
+                  <span className="hidden sm:inline">Waveform</span>
+                </button>
+                
+                <button 
+                  className={`${visualizerType === 'frequency' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
+                  onClick={() => setVisualizerType('frequency')}
+                >
+                  <Volume2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Spectrum</span>
+                </button>
+                
+                <button 
+                  className={`${visualizerType === 'quantum' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
+                  onClick={() => setVisualizerType('quantum')}
+                >
+                  <Atom className="h-4 w-4" />
+                  <span className="hidden sm:inline">Quantum</span>
+                </button>
+                
+                <button 
+                  className={`${visualizerType === 'qpixl' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
+                  onClick={() => setVisualizerType('qpixl')}
+                >
+                  <Grid className="h-4 w-4" />
+                  <span className="hidden sm:inline">QPIXL</span>
+                </button>
+              </div>
+              
+              {/* QPIXL Status Indicator */}
+              <div className="mt-2 text-center">
+                {(() => {
+                  if (visualizerType === 'qpixl') {
+                    if (pythonOutput.qpixlStateArray && pythonOutput.qpixlStateArray.length > 0) {
+                      return <span className="text-xs font-medium text-green-400">Status: QPIXL Data Loaded</span>;
+                    } else {
+                      return <span className="text-xs font-medium text-yellow-400">Status: QPIXL Active - No Data</span>;
+                    }
+                  } else {
+                    if (quantumSettings && !quantumSettings.qpixlIntegration) {
+                      return <span className="text-xs font-medium text-gray-500">Status: QPIXL Integration Disabled</span>;
+                    }
+                    return <span className="text-xs font-medium text-gray-500">Status: QPIXL Inactive</span>;
+                  }
+                })()}
+              </div>
+            </div>
+            
+            {/* Advanced Audio Controls - NOW VISIBLE BY DEFAULT and close to the visualizer */}
+            <div className="neumorph p-4 rounded-xl">
+              <div className="flex items-center mb-4">
+                <Volume2 className="h-5 w-5 text-quantum-accent mr-2" />
+                <h2 className="text-xl font-bold">Advanced Audio Synthesis</h2>
+              </div>
+              
+              <QuantumAdvancedAudio 
+                onChange={handleAdvancedAudioChange}
+                initialSettings={advancedAudioSettings}
+              />
+            </div>
           </div>
           
-          <div className="h-60 rounded-xl overflow-hidden">
-            <VisualAnalyzer 
-              type={visualizerType}
-              color="#9b87f5"
-              audioContext={audioContext}
-              analyserNode={analyserNode}
-              qpixlData={pythonOutput.qpixlStateArray}
-              temporalCoherence={quantumSettings?.temporalCoherence ?? 50}
-            />
-          </div>
-          
-          <div className="grid grid-cols-4 gap-2 mt-4">
-            <button 
-              className={`${visualizerType === 'waveform' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
-              onClick={() => setVisualizerType('waveform')}
-            >
-              <AudioWaveform className="h-4 w-4" />
-              <span className="hidden sm:inline">Waveform</span>
-            </button>
-            
-            <button 
-              className={`${visualizerType === 'frequency' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
-              onClick={() => setVisualizerType('frequency')}
-            >
-              <Volume2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Spectrum</span>
-            </button>
-            
-            <button 
-              className={`${visualizerType === 'quantum' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
-              onClick={() => setVisualizerType('quantum')}
-            >
-              <Atom className="h-4 w-4" />
-              <span className="hidden sm:inline">Quantum</span>
-            </button>
-            
-            <button 
-              className={`${visualizerType === 'qpixl' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
-              onClick={() => setVisualizerType('qpixl')}
-            >
-              <Grid className="h-4 w-4" />
-              <span className="hidden sm:inline">QPIXL</span>
-            </button>
-          </div>
-          {/* QPIXL Status Indicator */}
-          <div className="mt-2 text-center">
-            {(() => {
-              if (visualizerType === 'qpixl') {
-                if (pythonOutput.qpixlStateArray && pythonOutput.qpixlStateArray.length > 0) {
-                  return <span className="text-xs font-medium text-green-400">Status: QPIXL Data Loaded</span>;
-                } else {
-                  return <span className="text-xs font-medium text-yellow-400">Status: QPIXL Active - No Data</span>;
-                }
-              } else {
-                if (quantumSettings && !quantumSettings.qpixlIntegration) {
-                  return <span className="text-xs font-medium text-gray-500">Status: QPIXL Integration Disabled</span>;
-                }
-                return <span className="text-xs font-medium text-gray-500">Status: QPIXL Inactive</span>;
-              }
-            })()}
-          </div>
-        </div>
-
-        {/* Main Interface Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-          {/* Control Panels - REARRANGED: Matrix first, then Quantum Controls */}
-          <div className="space-y-6">
-            {/* Matrix - MOVED UP */}
+          {/* Right Column: Quantum Controls (4/12) */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* Matrix */}
             <div className="neumorph p-4 rounded-xl">
               <div className="flex items-center mb-4">
                 <Sliders className="h-5 w-5 text-quantum-accent mr-2" />
                 <h2 className="text-xl font-bold">Quantum Matrix</h2>
               </div>
               
-              <div className="h-60 neumorph rounded-xl flex items-center justify-center">
-                <div className="text-quantum-accent text-center w-full p-4">
+              <div className="neumorph rounded-xl flex items-center justify-center p-4">
+                <div className="text-quantum-accent text-center w-full">
                   <div className="text-xl mb-2">Quantum Matrix Processor</div>
                   <div className="text-sm text-quantum-muted mb-4">
                     Generate quantum sound patterns with matrix operations
@@ -686,7 +703,7 @@ const Index = () => {
               </div>
             </div>
             
-            {/* Quantum Controls Panel - MOVED DOWN */}
+            {/* Quantum Controls Panel */}
             <div className="neumorph p-4 rounded-xl">
               <div className="flex items-center mb-4">
                 <Atom className="h-5 w-5 text-quantum-accent mr-2" />
@@ -697,229 +714,205 @@ const Index = () => {
                 onChange={setQuantumSettings}
               />
             </div>
+          </div>
+        </div>
+
+        {/* Audio Output Section - Full width */}
+        <div className="neumorph p-4 rounded-xl">
+          <div className="flex items-center mb-4">
+            <Radio className="h-5 w-5 text-quantum-accent mr-2" />
+            <h2 className="text-xl font-bold">Quantum Audio Output</h2>
+          </div>
+          
+          {/* Audio Output */}
+          <div className="mt-4">
+            <div className="neumorph h-32 rounded-xl overflow-hidden">
+              <VisualAnalyzer 
+                type="waveform"
+                color="#9b87f5"
+                audioContext={audioContext}
+                analyserNode={analyserNode}
+              />
+            </div>
             
-            {/* Advanced Audio Controls Toggle Button */}
-            <button
-              onClick={toggleAdvancedAudio}
-              className="w-full neumorph p-3 rounded-xl flex items-center justify-center gap-2"
-            >
-              <Volume2 className="h-5 w-5 text-quantum-accent" />
-              <span>{showAdvancedAudio ? "Hide Advanced Audio Controls" : "Show Advanced Audio Controls"}</span>
-            </button>
-            
-            {/* Advanced Audio Controls (conditionally shown) */}
-            {showAdvancedAudio && (
-              <div className="neumorph p-4 rounded-xl">
-                <div className="flex items-center mb-4">
-                  <Volume2 className="h-5 w-5 text-quantum-accent mr-2" />
-                  <h2 className="text-xl font-bold">Advanced Audio Synthesis</h2>
+            {/* Audio Controls */}
+            <div className="flex items-center justify-between mt-4">
+              <button
+                className={`${isPlaying ? "neumorph-active" : "neumorph"} p-3 rounded-full`}
+                onClick={isPlaying ? handleStop : handlePlay}
+              >
+                <Play className="h-5 w-5" />
+              </button>
+              
+              <div className="flex-1 mx-4">
+                <div className="bg-quantum-light h-1 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-quantum-accent h-full" 
+                    style={{ 
+                      width: engineAudioState && engineAudioState.duration > 0 
+                        ? `${(parseFloat(currentTime.split(':')[0]) * 60 + parseFloat(currentTime.split(':')[1])) / engineAudioState.duration * 100}%` 
+                        : "0%" 
+                    }}
+                  ></div>
                 </div>
-                
-                <QuantumAdvancedAudio 
-                  onChange={handleAdvancedAudioChange}
-                  initialSettings={advancedAudioSettings}
+              </div>
+              
+              <div className="font-mono text-sm">{currentTime} / {totalTime}</div>
+            </div>
+            
+            {/* Volume Control */}
+            <div className="flex items-center gap-2 mt-4">
+              <Volume2 className="h-4 w-4" />
+              <div className="w-full">
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="1" 
+                  step="0.01" 
+                  value={advancedAudioSettings?.masterVolume || 0.7}
+                  onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                  className="w-full h-1 bg-quantum-light rounded-lg appearance-none cursor-pointer"
                 />
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Right column - Audio Output and Analysis */}
-          <div className="neumorph p-4 rounded-xl lg:col-span-2">
-            <div className="flex items-center mb-4">
-              <Radio className="h-5 w-5 text-quantum-accent mr-2" />
-              <h2 className="text-xl font-bold">Quantum Audio Output</h2>
-            </div>
-            
-            {/* Audio Output */}
-            <div className="mt-4">
-              <div className="neumorph h-32 rounded-xl overflow-hidden">
-                <VisualAnalyzer 
-                  type="waveform"
-                  color="#9b87f5"
-                  audioContext={audioContext}
-                  analyserNode={analyserNode}
-                />
+          {/* Effects and Processors */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <div className="neumorph p-4 rounded-xl">
+              <div className="flex items-center mb-4">
+                <Sliders className="h-5 w-5 text-quantum-accent mr-2" />
+                <h2 className="text-xl font-bold">Quantum Circuit</h2>
               </div>
               
-              {/* Audio Controls */}
-              <div className="flex items-center justify-between mt-4">
-                <button
-                  className={`${isPlaying ? "neumorph-active" : "neumorph"} p-3 rounded-full`}
-                  onClick={isPlaying ? handleStop : handlePlay}
-                >
-                  <Play className="h-5 w-5" />
-                </button>
-                
-                <div className="flex-1 mx-4">
-                  <div className="bg-quantum-light h-1 rounded-full overflow-hidden">
-                    <div 
-                      className="bg-quantum-accent h-full" 
-                      style={{ 
-                        width: engineAudioState && engineAudioState.duration > 0 
-                          ? `${(parseFloat(currentTime.split(':')[0]) * 60 + parseFloat(currentTime.split(':')[1])) / engineAudioState.duration * 100}%` 
-                          : "0%" 
-                      }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <div className="font-mono text-sm">{currentTime} / {totalTime}</div>
-              </div>
-              
-              {/* Volume Control */}
-              <div className="flex items-center gap-2 mt-4">
-                <Volume2 className="h-4 w-4" />
-                <div className="w-full">
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="1" 
-                    step="0.01" 
-                    value={advancedAudioSettings?.masterVolume || 0.7}
-                    onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                    className="w-full h-1 bg-quantum-light rounded-lg appearance-none cursor-pointer"
-                  />
-                </div>
-              </div>
-            </div>
-            
-            {/* Effects and Processors */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-              <div className="neumorph p-4 rounded-xl">
-                <div className="flex items-center mb-4">
-                  <Sliders className="h-5 w-5 text-quantum-accent mr-2" />
-                  <h2 className="text-xl font-bold">Quantum Circuit</h2>
-                </div>
-                
-                <div className="h-40 quantum-grid flex items-center justify-center rounded-lg">
-                  {engineAudioState?.circuitData ? (
-                    <div className="grid grid-cols-1 gap-4 w-full">
-                      <div className="text-center">
-                        <div className="text-quantum-accent text-lg font-medium mb-2">
-                          Circuit with {engineAudioState.circuitData.qubits} qubits
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          {Object.entries(engineAudioState.circuitData.gates || {})
-                            .slice(0, 6)
-                            .map(([idx, gate]: [string, any], i) => (
-                              <div key={i} className="neumorph px-2 py-1 rounded text-xs">
-                                {gate.type} @ q{gate.qubit || gate.target || 0}
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
+              <div className="h-40 quantum-grid flex items-center justify-center rounded-lg">
+                {engineAudioState?.circuitData ? (
+                  <div className="grid grid-cols-1 gap-4 w-full">
                     <div className="text-center">
-                      <div className="text-quantum-accent text-lg font-medium mb-2">Circuit Design</div>
-                      <p className="text-quantum-muted text-sm">
-                        {quantumSettings 
-                          ? `Circuit with ${quantumSettings.qubits} qubits and ${quantumSettings.shots} shots`
-                          : "No quantum circuit configured yet"}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Compression Metrics Display */}
-                {engineAudioState?.compressionMetrics && (
-                  <div className="mt-4">
-                    <h3 className="text-sm font-medium mb-2">Quantum Compression</h3>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="neumorph p-2 rounded-lg text-center">
-                        <div className="text-xs text-quantum-muted">Original</div>
-                        <div className="text-sm font-medium">
-                          {engineAudioState.compressionMetrics.originalComplexity?.toFixed(2)}
-                        </div>
+                      <div className="text-quantum-accent text-lg font-medium mb-2">
+                        Circuit with {engineAudioState.circuitData.qubits} qubits
                       </div>
-                      <div className="neumorph p-2 rounded-lg text-center">
-                        <div className="text-xs text-quantum-muted">Compressed</div>
-                        <div className="text-sm font-medium">
-                          {engineAudioState.compressionMetrics.compressedComplexity?.toFixed(2)}
-                        </div>
-                      </div>
-                      <div className="neumorph p-2 rounded-lg text-center">
-                        <div className="text-xs text-quantum-muted">Ratio</div>
-                        <div className="text-sm font-medium">
-                          {(engineAudioState.compressionMetrics.compressionRatio ? engineAudioState.compressionMetrics.compressionRatio * 100 : 0).toFixed(1)}%
-                        </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {Object.entries(engineAudioState.circuitData.gates || {})
+                          .slice(0, 6)
+                          .map(([idx, gate]: [string, any], i) => (
+                            <div key={i} className="neumorph px-2 py-1 rounded text-xs">
+                              {gate.type} @ q{gate.qubit || gate.target || 0}
+                            </div>
+                          ))}
                       </div>
                     </div>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <div className="text-quantum-accent text-lg font-medium mb-2">Circuit Design</div>
+                    <p className="text-quantum-muted text-sm">
+                      {quantumSettings 
+                        ? `Circuit with ${quantumSettings.qubits} qubits and ${quantumSettings.shots} shots`
+                        : "No quantum circuit configured yet"}
+                    </p>
                   </div>
                 )}
               </div>
               
-              <div className="neumorph p-4 rounded-xl">
-                <div className="flex items-center mb-4">
-                  <Radio className="h-5 w-5 text-quantum-accent mr-2" />
-                  <h2 className="text-xl font-bold">Measurement Analysis</h2>
+              {/* Compression Metrics Display */}
+              {engineAudioState?.compressionMetrics && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium mb-2">Quantum Compression</h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="neumorph p-2 rounded-lg text-center">
+                      <div className="text-xs text-quantum-muted">Original</div>
+                      <div className="text-sm font-medium">
+                        {engineAudioState.compressionMetrics.originalComplexity?.toFixed(2)}
+                      </div>
+                    </div>
+                    <div className="neumorph p-2 rounded-lg text-center">
+                      <div className="text-xs text-quantum-muted">Compressed</div>
+                      <div className="text-sm font-medium">
+                        {engineAudioState.compressionMetrics.compressedComplexity?.toFixed(2)}
+                      </div>
+                    </div>
+                    <div className="neumorph p-2 rounded-lg text-center">
+                      <div className="text-xs text-quantum-muted">Ratio</div>
+                      <div className="text-sm font-medium">
+                        {(engineAudioState.compressionMetrics.compressionRatio ? engineAudioState.compressionMetrics.compressionRatio * 100 : 0).toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                
-                <div className="grid grid-cols-4 gap-2">
-                  {engineAudioState && engineAudioState.quantumProbabilities ? 
-                    Object.entries(engineAudioState.quantumProbabilities)
-                      .slice(0, 4) // Show only first 4 states if there are many
-                      .map(([state, prob]) => (
-                        <div 
-                          key={state} 
-                          className="neumorph p-3 rounded-lg flex flex-col items-center"
-                        >
-                          <div className="text-sm mb-1 font-mono">{state}</div>
-                          <div className="text-xl font-medium text-quantum-accent">
-                            {Math.floor(prob * 100)}%
-                          </div>
-                        </div>
-                      ))
-                    :
-                    ["00", "01", "10", "11"].map((state) => (
+              )}
+            </div>
+            
+            <div className="neumorph p-4 rounded-xl">
+              <div className="flex items-center mb-4">
+                <Radio className="h-5 w-5 text-quantum-accent mr-2" />
+                <h2 className="text-xl font-bold">Measurement Analysis</h2>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-2">
+                {engineAudioState && engineAudioState.quantumProbabilities ? 
+                  Object.entries(engineAudioState.quantumProbabilities)
+                    .slice(0, 4) // Show only first 4 states if there are many
+                    .map(([state, prob]) => (
                       <div 
                         key={state} 
                         className="neumorph p-3 rounded-lg flex flex-col items-center"
                       >
                         <div className="text-sm mb-1 font-mono">{state}</div>
                         <div className="text-xl font-medium text-quantum-accent">
-                          {Math.floor(Math.random() * 40 + 10)}%
+                          {Math.floor(prob * 100)}%
                         </div>
                       </div>
                     ))
-                  }
-                </div>
-                
-                {/* Spectral Analysis */}
-                {engineAudioState?.spectralAnalysis && (
-                  <div className="mt-4">
-                    <h3 className="text-sm font-medium mb-2">Spectral Analysis</h3>
-                    <div className="neumorph p-3 rounded-lg">
-                      <div className="h-12 relative">
-                        {engineAudioState.spectralAnalysis.amplitudes.length > 0 && (
-                          <div className="absolute inset-0 flex items-end">
-                            {Array.from({ length: 32 }).map((_, i) => {
-                              const idx = Math.floor(i * engineAudioState.spectralAnalysis!.amplitudes.length / 32);
-                              const amp = engineAudioState.spectralAnalysis!.amplitudes[idx] || 0;
-                              return (
-                                <div 
-                                  key={i} 
-                                  className="flex-1 mx-px bg-quantum-accent"
-                                  style={{ height: `${amp * 100}%` }}
-                                />
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="text-xs text-center mt-2 text-quantum-muted">
-                        {engineAudioState.spectralAnalysis.harmonicRatios?.length > 0 && (
-                          <span>Harmony ratio: {engineAudioState.spectralAnalysis.harmonicRatios[0].toFixed(2)}</span>
-                        )}
+                  :
+                  ["00", "01", "10", "11"].map((state) => (
+                    <div 
+                      key={state} 
+                      className="neumorph p-3 rounded-lg flex flex-col items-center"
+                    >
+                      <div className="text-sm mb-1 font-mono">{state}</div>
+                      <div className="text-xl font-medium text-quantum-accent">
+                        {Math.floor(Math.random() * 40 + 10)}%
                       </div>
                     </div>
+                  ))
+                }
+              </div>
+              
+              {/* Spectral Analysis */}
+              {engineAudioState?.spectralAnalysis && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium mb-2">Spectral Analysis</h3>
+                  <div className="neumorph p-3 rounded-lg">
+                    <div className="h-12 relative">
+                      {engineAudioState.spectralAnalysis.amplitudes.length > 0 && (
+                        <div className="absolute inset-0 flex items-end">
+                          {Array.from({ length: 32 }).map((_, i) => {
+                            const idx = Math.floor(i * engineAudioState.spectralAnalysis!.amplitudes.length / 32);
+                            const amp = engineAudioState.spectralAnalysis!.amplitudes[idx] || 0;
+                            return (
+                              <div 
+                                key={i} 
+                                className="flex-1 mx-px bg-quantum-accent"
+                                style={{ height: `${amp * 100}%` }}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="text-xs text-center mt-2 text-quantum-muted">
+                      {engineAudioState.spectralAnalysis.harmonicRatios?.length > 0 && (
+                        <span>Harmony ratio: {engineAudioState.spectralAnalysis.harmonicRatios[0].toFixed(2)}</span>
+                      )}
+                    </div>
                   </div>
-                )}
-                
-                <div className="mt-4 text-sm text-center text-quantum-muted">
-                  Showing quantum state probabilities based on measurement
                 </div>
+              )}
+              
+              <div className="mt-4 text-sm text-center text-quantum-muted">
+                Showing quantum state probabilities based on measurement
               </div>
             </div>
           </div>
