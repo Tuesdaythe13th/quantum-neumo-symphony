@@ -17,6 +17,9 @@ export interface AdvancedAudioSettings {
   
   // Main Volume
   masterVolume: number;
+
+  // For visualizer (optional)
+  qpixlTemporalCoherenceForVisualizer?: number;
 }
 
 // Default settings

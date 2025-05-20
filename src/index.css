@@ -89,4 +89,26 @@
       linear-gradient(to right, rgba(76, 77, 110, 0.1) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(76, 77, 110, 0.1) 1px, transparent 1px);
   }
+  
+  /* New quantum-panel-neumorph class for consistent dark theming */
+  .quantum-panel-neumorph {
+    @apply bg-quantum-surface rounded-xl;
+    box-shadow: 6px 6px 12px rgba(17, 18, 23, 0.8), -6px -6px 12px rgba(45, 48, 63, 0.3);
+    @apply p-4;
+  }
+  
+  /* Scrollbar styling for dark theme */
+  .scrollbar-thin::-webkit-scrollbar { 
+    width: 6px; 
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track { 
+    @apply bg-quantum-surface rounded-full;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb { 
+    @apply bg-quantum-muted rounded-full;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover { 
+    @apply bg-quantum-accent/50;
+  }
 }
