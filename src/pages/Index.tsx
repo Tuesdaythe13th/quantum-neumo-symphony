@@ -531,7 +531,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-quantum-bg text-white p-4 md:p-6 overflow-hidden">
-      <Toaster position="top-right" />
+      {/* Remove the duplicate Toaster component as it's already in App.tsx */}
       
       {/* Hidden file input for uploads */}
       <input 
