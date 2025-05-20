@@ -4,6 +4,9 @@ import { cn } from "@/lib/utils";
 import VisualAnalyzer from "./VisualAnalyzer";
 import { AudioWaveform, Volume2, RotateCcw, Wifi, WifiOff } from "lucide-react";
 
+// Debug flag to control console logging (set to false in production)
+const DEBUG = false;
+
 interface QuantumStateData {
   amplitude: number;
   phase: number;
@@ -19,6 +22,7 @@ interface QuantumSynestheticVizProps {
   className?: string;
   externalQuantumState?: QuantumStateData | null;
   wsPort?: number;
+  onDataReceived?: (message: any) => void; // New callback for parent component
 }
 
 const DEFAULT_STATE: QuantumStateData = {
@@ -35,7 +39,8 @@ const DEFAULT_STATE: QuantumStateData = {
 const QuantumSynestheticViz: React.FC<QuantumSynestheticVizProps> = ({
   className,
   externalQuantumState,
-  wsPort = 8765
+  wsPort = 8765,
+  onDataReceived
 }) => {
   // State to hold quantum visualization parameters
   const [currentState, setCurrentState] = useState<QuantumStateData>(DEFAULT_STATE);
@@ -53,6 +58,7 @@ const QuantumSynestheticViz: React.FC<QuantumSynestheticVizProps> = ({
   // Process external state if provided
   useEffect(() => {
     if (externalQuantumState) {
+      if (DEBUG) console.log("Using external quantum state:", externalQuantumState);
       setCurrentState(externalQuantumState);
     }
   }, [externalQuantumState]);
@@ -69,17 +75,29 @@ const QuantumSynestheticViz: React.FC<QuantumSynestheticVizProps> = ({
     
     socket.onopen = () => {
       setWsStatus("connected");
-      console.log(`Connected to WebSocket server on port ${wsPort}`);
+      if (DEBUG) console.log(`Connected to WebSocket server on port ${wsPort}`);
+      setCurrentState(prev => ({...prev, debug_message: `Connected to ws://localhost:${wsPort} - Waiting for QPIXL data...`}));
     };
     
     socket.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
+        if (DEBUG) console.log("WebSocket message received:", message);
+        
         if (message.type === 'quantum_state_update' && message.data) {
           setCurrentState(message.data);
+          
+          // Notify parent component of received data if callback provided
+          if (onDataReceived) {
+            onDataReceived(message);
+          }
         }
       } catch (error) {
         console.error("Failed to parse WebSocket message:", error);
+        setCurrentState(prev => ({
+          ...prev, 
+          debug_message: `WebSocket parse error: ${error}`
+        }));
       }
     };
     
@@ -92,7 +110,7 @@ const QuantumSynestheticViz: React.FC<QuantumSynestheticVizProps> = ({
     socket.onclose = () => {
       setWsStatus("disconnected");
       setCurrentState(prev => ({...prev, debug_message: "Disconnected from Python. Try restarting server."}));
-      console.log("WebSocket connection closed");
+      if (DEBUG) console.log("WebSocket connection closed");
     };
     
     return () => {
@@ -101,7 +119,7 @@ const QuantumSynestheticViz: React.FC<QuantumSynestheticVizProps> = ({
         wsRef.current = null;
       }
     };
-  }, [externalQuantumState, wsPort]);
+  }, [externalQuantumState, wsPort, onDataReceived]);
 
   // Initialize audio context
   useEffect(() => {
@@ -202,20 +220,32 @@ const QuantumSynestheticViz: React.FC<QuantumSynestheticVizProps> = ({
     setCurrentState(DEFAULT_STATE);
   };
 
-  // KEY CHANGE: Explicitly cast the visualizerType to the expected union type
+  // Improved QPIXL detection with robust object checking
   const hasQpixlData = currentState.probabilities && 
                       Object.keys(currentState.probabilities).length > 0;
+  
+  if (DEBUG) {
+    console.log("QPIXL detection:", {
+      hasQpixlData,
+      probabilities: currentState.probabilities,
+      probabilityCount: currentState.probabilities ? Object.keys(currentState.probabilities).length : 0
+    });
+  }
   
   const visualizerType = hasQpixlData 
     ? "qpixl" as const
     : "quantum" as const;
 
+  // Improved Float32Array handling with proper typing
+  const probabilityValues: number[] = 
+    hasQpixlData 
+      ? Object.values(currentState.probabilities!) as number[]
+      : [];
+
   // Convert quantum state to visualization parameters
   const visualizerProps = {
     type: visualizerType,
-    qpixlData: new Float32Array(
-      Object.values(currentState.probabilities || {})
-    ),
+    qpixlData: new Float32Array(probabilityValues),
     temporalCoherence: currentState.entanglement * 100,
     color: `hsl(${(currentState.phase * 180 / Math.PI + 90) % 360}, 90%, 70%)`,
     backgroundColor: "transparent"
@@ -253,7 +283,7 @@ const QuantumSynestheticViz: React.FC<QuantumSynestheticVizProps> = ({
           <RotateCcw size={20} />
         </button>
         
-        {/* Status indicator */}
+        {/* Enhanced status indicator */}
         <div className="absolute bottom-4 left-4 p-2 bg-black/60 backdrop-blur-sm rounded-lg text-xs font-mono shadow-lg max-w-xs">
           <div className={`flex items-center gap-1.5 mb-1.5 pb-1.5 border-b border-gray-700/50 ${
             wsStatus === "connected" ? "text-green-400" :
@@ -262,16 +292,30 @@ const QuantumSynestheticViz: React.FC<QuantumSynestheticVizProps> = ({
             {wsStatus === "connecting" && <div className="w-3 h-3 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>}
             {(wsStatus === "disconnected" || wsStatus === "error") && <WifiOff size={14} />}
             <span>{wsStatus.charAt(0).toUpperCase() + wsStatus.slice(1)} {wsPort ? `(Port: ${wsPort})` : ''}</span>
+            {externalQuantumState && <span className="text-orange-400 ml-1">🧪 Test</span>}
           </div>
+          
           <div className="text-purple-200/90 mb-1 truncate" title={currentState.debug_message}>
             {currentState.debug_message || "Status pending..."}
           </div>
+          
           <div className="grid grid-cols-2 gap-x-3 text-[10px] text-gray-400">
             <div>Amp: {currentState.amplitude.toFixed(2)}</div>
             <div>Phase: {(currentState.phase / Math.PI).toFixed(2)}π</div>
             <div>Freq: {currentState.frequency.toFixed(0)} Hz</div>
             <div>Ent: {currentState.entanglement.toFixed(2)}</div>
-            <div>Mode: {visualizerType}</div>
+            
+            {/* Enhanced mode indicator with QPIXL status */}
+            <div className={`col-span-2 ${hasQpixlData ? "text-green-400 font-bold" : "text-gray-400"}`}>
+              Mode: {visualizerType} {hasQpixlData ? "✓" : ""}
+            </div>
+            
+            {/* Show QPIXL state count when active */}
+            {hasQpixlData && (
+              <div className="col-span-2 text-green-400 text-[9px]">
+                QPIXL: {Object.keys(currentState.probabilities!).length} quantum states
+              </div>
+            )}
           </div>
         </div>
       </div>
