@@ -120,7 +120,12 @@ export default {
 				'neumorph-flat': '5px 5px 10px #141525, -5px -5px 10px #262b4d',
 				'neumorph-pressed': 'inset 5px 5px 10px #141525, inset -5px -5px 10px #262b4d',
 				'neumorph-glow': '0 0 15px rgba(139, 92, 246, 0.5)',
-				'quantum-glow': '0 0 20px rgba(155, 135, 245, 0.6)'
+				'quantum-glow': '0 0 20px rgba(155, 135, 245, 0.6)',
+				// Light mode neumorphic shadows
+				'neumorph-light': '5px 5px 10px rgba(0, 0, 0, 0.05), -5px -5px 10px rgba(255, 255, 255, 0.8)',
+				'neumorph-pressed-light': 'inset 5px 5px 10px rgba(0, 0, 0, 0.05), inset -5px -5px 10px rgba(255, 255, 255, 0.8)',
+				'neumorph-glow-light': '0 0 15px rgba(0, 0, 0, 0.1)',
+				'quantum-glow-light': '0 0 20px rgba(0, 0, 0, 0.15)'
 			}
 		}
 	},

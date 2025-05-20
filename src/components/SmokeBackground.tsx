@@ -1,15 +1,18 @@
 
 import React, { useRef, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 
 const SmokeBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const webGLRef = useRef<any>(null);
+  const { theme } = useTheme();
 
   const fragmentShaderSource = `#version 300 es
 precision highp float;
 
 uniform float time;
 uniform vec2 vp;
+uniform int isDark;
 
 in vec2 uv;
 out vec4 fragColor;
@@ -68,10 +71,18 @@ void main() {
     float nns = force * fbm(vec2(ns_a, ns_b));
     float ins = fbm(vec2(ns_b, ns_a));
 
-    // Modified to make dark smoke on black background
-    vec3 c1 = mix(vec3(0.12, 0.1, 0.14), vec3(0.05, 0.04, 0.06), ins + shift);
+    vec3 color;
+    if (isDark == 1) {
+      // Dark mode: original dark smoke effect
+      vec3 c1 = mix(vec3(0.12, 0.1, 0.14), vec3(0.05, 0.04, 0.06), ins + shift);
+      color = c1 + vec3(ins - gradient) * 0.15;
+    } else {
+      // Light mode: black and white smoke effect
+      float value = mix(0.95, 0.85, ins + shift) + (ins - gradient) * 0.08;
+      color = vec3(value);
+    }
 
-    fragColor = vec4(c1 + vec3(ins - gradient) * 0.15, 0.7); // Subtle smoke with some transparency
+    fragColor = vec4(color, isDark == 1 ? 0.7 : 0.4); // Adjusted opacity based on theme
 }
 `;
 
@@ -82,6 +93,7 @@ void main() {
     private startTime: number;
     private timeLocation: WebGLUniformLocation | null;
     private resolutionLocation: WebGLUniformLocation | null;
+    private isDarkLocation: WebGLUniformLocation | null;
 
     private vertexShaderSource = `#version 300 es
         precision mediump float;
@@ -92,7 +104,7 @@ void main() {
             gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);
         }`;
 
-    constructor(canvas: HTMLCanvasElement, fragmentShaderSource: string) {
+    constructor(canvas: HTMLCanvasElement, fragmentShaderSource: string, isDark: boolean) {
       this.cn = canvas;
       const gl = canvas.getContext('webgl2');
       if (!gl) {
@@ -124,6 +136,10 @@ void main() {
 
       this.timeLocation = this.gl.getUniformLocation(this.program, 'time');
       this.resolutionLocation = this.gl.getUniformLocation(this.program, 'vp');
+      this.isDarkLocation = this.gl.getUniformLocation(this.program, 'isDark');
+
+      // Set initial dark mode value
+      this.gl.uniform1i(this.isDarkLocation, isDark ? 1 : 0);
 
       this.render();
     }
@@ -153,6 +169,10 @@ void main() {
       return shader;
     }
 
+    updateTheme(isDark: boolean) {
+      this.gl.uniform1i(this.isDarkLocation, isDark ? 1 : 0);
+    }
+
     render = () => {
       this.gl.uniform1f(this.timeLocation, (Date.now() - this.startTime) / 1000);
       this.gl.uniform2fv(this.resolutionLocation, [this.cn.width, this.cn.height]);
@@ -164,7 +184,15 @@ void main() {
   useEffect(() => {
     if (canvasRef.current) {
       try {
-        webGLRef.current = new WebGLHandler(canvasRef.current, fragmentShaderSource);
+        if (!webGLRef.current) {
+          webGLRef.current = new WebGLHandler(
+            canvasRef.current, 
+            fragmentShaderSource, 
+            theme === 'dark'
+          );
+        } else {
+          webGLRef.current.updateTheme(theme === 'dark');
+        }
       } catch (error) {
         console.error('WebGL setup failed:', error);
       }
@@ -174,13 +202,13 @@ void main() {
       // Cleanup
       window.removeEventListener('resize', () => {});
     };
-  }, []);
+  }, [theme]);
 
   return (
     <canvas
       ref={canvasRef}
       className="fixed top-0 left-0 w-full h-full z-[-1]"
-      style={{ display: 'block', background: 'black' }}
+      style={{ display: 'block', background: theme === 'dark' ? 'black' : 'white' }}
     />
   );
 };

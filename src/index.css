@@ -85,21 +85,26 @@
   }
 
   body {
-    @apply bg-black text-white;
+    @apply bg-black text-white dark:bg-black dark:text-white light:bg-white light:text-black;
+  }
+
+  body.light {
+    background: white;
+    color: black;
   }
 }
 
 @layer components {
   .neumorph {
-    @apply bg-quantum-surface shadow-neumorph-flat rounded-xl;
+    @apply bg-quantum-surface shadow-neumorph-flat rounded-xl dark:bg-quantum-surface dark:shadow-neumorph-flat light:bg-white light:shadow-neumorph-light;
   }
   
   .neumorph-active {
-    @apply bg-quantum-light shadow-neumorph-pressed rounded-xl;
+    @apply bg-quantum-light shadow-neumorph-pressed rounded-xl dark:bg-quantum-light dark:shadow-neumorph-pressed light:bg-gray-100 light:shadow-neumorph-pressed-light;
   }
   
   .neumorph-button {
-    @apply neumorph px-4 py-2 transition-shadow duration-200 hover:shadow-neumorph-glow;
+    @apply neumorph px-4 py-2 transition-shadow duration-200 hover:shadow-neumorph-glow dark:hover:shadow-neumorph-glow light:hover:shadow-neumorph-glow-light;
   }
   
   .neumorph-button-active {
@@ -107,19 +112,31 @@
   }
   
   .quantum-glow {
-    @apply shadow-quantum-glow;
+    @apply shadow-quantum-glow dark:shadow-quantum-glow light:shadow-quantum-glow-light;
   }
   
   .knob-shadow {
     box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2), -3px -3px 6px rgba(255, 255, 255, 0.05);
   }
+
+  .light .knob-shadow {
+    box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.1), -3px -3px 6px rgba(255, 255, 255, 0.8);
+  }
   
   .knob-shadow-active {
     box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.3), inset -3px -3px 6px rgba(255, 255, 255, 0.05);
   }
+
+  .light .knob-shadow-active {
+    box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.15), inset -3px -3px 6px rgba(255, 255, 255, 0.5);
+  }
   
   .gradient-text {
     @apply bg-gradient-to-r from-quantum-accent to-quantum-glow bg-clip-text text-transparent;
+  }
+
+  .light .gradient-text {
+    @apply bg-gradient-to-r from-black to-gray-700 bg-clip-text text-transparent;
   }
   
   .quantum-grid {
@@ -127,5 +144,12 @@
     background-image: 
       linear-gradient(to right, rgba(76, 77, 110, 0.1) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(76, 77, 110, 0.1) 1px, transparent 1px);
+  }
+
+  .light .quantum-grid {
+    background-size: 30px 30px;
+    background-image: 
+      linear-gradient(to right, rgba(20, 20, 20, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(20, 20, 20, 0.05) 1px, transparent 1px);
   }
 }

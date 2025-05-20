@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import PythonBridge from "./pages/PythonBridge";
 import NotFound from "./pages/NotFound";
 import SmokeBackground from "./components/SmokeBackground";
+import ThemeToggle from "./components/ThemeToggle";
 
 const queryClient = new QueryClient();
 
@@ -16,6 +17,7 @@ const App = () => (
     <TooltipProvider>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
         <SmokeBackground />
+        <ThemeToggle />
         <Toaster />
         <BrowserRouter>
           <Routes>
