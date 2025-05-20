@@ -5,10 +5,11 @@ import {
   Volume2, Upload, Grid, Download
 } from "lucide-react";
 
-import QuantumControls, { QuantumSettings, SpectralMode } from "@/components/QuantumControls";
+import QuantumControls, { QuantumSettings } from "@/components/QuantumControls";
 import VisualAnalyzer from "@/components/VisualAnalyzer";
 import QuantumPad from "@/components/QuantumPad";
 import DAWTransport from "@/components/DAWTransport";
+import QuantumAdvancedAudio, { AdvancedAudioSettings } from "@/components/QuantumAdvancedAudio";
 import { toast } from "sonner";
 import { quantumAudioEngine, QuantumAudioState } from "@/lib/quantumAudioEngine";
 
@@ -17,15 +18,18 @@ const Index = () => {
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
   const [quantumSettings, setQuantumSettings] = useState<QuantumSettings | null>(null);
+  const [advancedAudioSettings, setAdvancedAudioSettings] = useState<AdvancedAudioSettings | null>(null);
   const [currentTime, setCurrentTime] = useState<string>("00:00");
   const [totalTime, setTotalTime] = useState<string>("00:00");
   const [audioState, setAudioState] = useState<QuantumAudioState | null>(null);
   const [visualizerType, setVisualizerType] = useState<"waveform" | "frequency" | "quantum" | "qpixl">("quantum");
   const [temporalCoherence, setTemporalCoherence] = useState<number>(50);
+  const [showAdvancedAudio, setShowAdvancedAudio] = useState<boolean>(false);
   
   const timerRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastSettingsRef = useRef<QuantumSettings | null>(null);
+  const lastAdvancedSettingsRef = useRef<AdvancedAudioSettings | null>(null);
 
   // Initialize audio context on user interaction
   const initAudio = () => {
@@ -57,9 +61,16 @@ const Index = () => {
     
     try {
       initAudio();
+      
+      // Apply advanced audio settings if available
+      if (advancedAudioSettings) {
+        quantumAudioEngine.setAdvancedAudioSettings(advancedAudioSettings);
+      }
+      
       const result = await quantumAudioEngine.generateQuantumSound(quantumSettings);
       setAudioState(result);
       lastSettingsRef.current = quantumSettings;
+      lastAdvancedSettingsRef.current = advancedAudioSettings;
       
       if (quantumSettings.qpixlIntegration) {
         setVisualizerType("qpixl");
@@ -167,8 +178,13 @@ const Index = () => {
 
   // Effect to regenerate audio when settings change while playing
   useEffect(() => {
-    if (isPlaying && quantumSettings && 
-        JSON.stringify(quantumSettings) !== JSON.stringify(lastSettingsRef.current)) {
+    if (isPlaying && 
+        (
+          (quantumSettings && JSON.stringify(quantumSettings) !== JSON.stringify(lastSettingsRef.current))
+          || 
+          (advancedAudioSettings && JSON.stringify(advancedAudioSettings) !== JSON.stringify(lastAdvancedSettingsRef.current))
+        )
+       ) {
       const regenerateAudio = async () => {
         const result = await generateQuantumAudio();
         if (result && result.audioBuffer) {
@@ -179,7 +195,7 @@ const Index = () => {
       
       regenerateAudio();
     }
-  }, [quantumSettings, isPlaying]);
+  }, [quantumSettings, advancedAudioSettings, isPlaying]);
 
   const handleSave = () => {
     toast.success("Preset saved");
@@ -365,6 +381,17 @@ const Index = () => {
     }
   };
 
+  // Handle changes to advanced audio settings
+  const handleAdvancedAudioChange = (settings: AdvancedAudioSettings) => {
+    setAdvancedAudioSettings(settings);
+    quantumAudioEngine.setAdvancedAudioSettings(settings);
+  };
+
+  // Toggle advanced audio panel
+  const toggleAdvancedAudio = () => {
+    setShowAdvancedAudio(!showAdvancedAudio);
+  };
+
   useEffect(() => {
     // Clean up audio context and timers when component unmounts
     return () => {
@@ -437,16 +464,43 @@ const Index = () => {
 
         {/* Main Interface Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-          {/* Quantum Controls Panel */}
-          <div className="neumorph p-4 rounded-xl">
-            <div className="flex items-center mb-4">
-              <Atom className="h-5 w-5 text-quantum-accent mr-2" />
-              <h2 className="text-xl font-bold">Quantum Parameters</h2>
+          {/* Control Panels */}
+          <div className="space-y-6">
+            {/* Quantum Controls Panel */}
+            <div className="neumorph p-4 rounded-xl">
+              <div className="flex items-center mb-4">
+                <Atom className="h-5 w-5 text-quantum-accent mr-2" />
+                <h2 className="text-xl font-bold">Quantum Parameters</h2>
+              </div>
+              
+              <QuantumControls 
+                onChange={setQuantumSettings}
+              />
             </div>
             
-            <QuantumControls 
-              onChange={setQuantumSettings}
-            />
+            {/* Advanced Audio Controls Toggle Button */}
+            <button
+              onClick={toggleAdvancedAudio}
+              className="w-full neumorph p-3 rounded-xl flex items-center justify-center gap-2"
+            >
+              <Volume2 className="h-5 w-5 text-quantum-accent" />
+              <span>{showAdvancedAudio ? "Hide Advanced Audio Controls" : "Show Advanced Audio Controls"}</span>
+            </button>
+            
+            {/* Advanced Audio Controls (conditionally shown) */}
+            {showAdvancedAudio && (
+              <div className="neumorph p-4 rounded-xl">
+                <div className="flex items-center mb-4">
+                  <Volume2 className="h-5 w-5 text-quantum-accent mr-2" />
+                  <h2 className="text-xl font-bold">Advanced Audio Synthesis</h2>
+                </div>
+                
+                <QuantumAdvancedAudio 
+                  onChange={handleAdvancedAudioChange}
+                  initialSettings={advancedAudioSettings || undefined}
+                />
+              </div>
+            )}
           </div>
 
           {/* Visualizer + Matrix */}
@@ -521,12 +575,40 @@ const Index = () => {
             
             {/* Audio Output */}
             <div className="mt-6">
-              <div className="flex items-center mb-4">
-                <Radio className="h-5 w-5 text-quantum-accent mr-2" />
-                <h3 className="text-lg font-medium">Quantum Audio Output</h3>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <Radio className="h-5 w-5 text-quantum-accent mr-2" />
+                  <h3 className="text-lg font-medium">Quantum Audio Output</h3>
+                </div>
+                
+                {/* Volume Control */}
+                <div className="flex items-center gap-2">
+                  <Volume2 className="h-4 w-4" />
+                  <div className="w-24">
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="1" 
+                      step="0.01" 
+                      value={advancedAudioSettings?.masterVolume || 0.7}
+                      onChange={(e) => {
+                        const newVolume = parseFloat(e.target.value);
+                        setAdvancedAudioSettings(prev => ({
+                          ...prev || {},
+                          masterVolume: newVolume
+                        }));
+                        quantumAudioEngine.setAdvancedAudioSettings({
+                          ...(advancedAudioSettings || {}),
+                          masterVolume: newVolume
+                        });
+                      }}
+                      className="w-full h-1 bg-quantum-light rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+                </div>
               </div>
               
-              <div className="neumorph h-24 rounded-xl overflow-hidden">
+              <div className="neumorph h-32 rounded-xl overflow-hidden">
                 <VisualAnalyzer 
                   type="waveform"
                   color="#9b87f5"

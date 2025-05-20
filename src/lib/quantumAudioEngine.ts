@@ -1,4 +1,5 @@
 import { QuantumSettings } from "@/components/QuantumControls";
+import { AdvancedAudioSettings } from "@/components/QuantumAdvancedAudio";
 
 export interface QuantumAudioState {
   audioBuffer: AudioBuffer | null;
@@ -30,6 +31,15 @@ export class QuantumAudioEngine {
   private audioSource: AudioBufferSourceNode | null = null;
   private quantum_state: Record<string, number> = {};
   private qpixlData: Float32Array | null = null;
+  private masterVolumeNode: GainNode | null = null;
+  private advancedSettings: AdvancedAudioSettings | null = null;
+  private musicalScales: Record<string, number[]> = {
+    'Chromatic': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    'Major Pentatonic': [0, 2, 4, 7, 9],
+    'Minor Pentatonic': [0, 3, 5, 7, 10],
+    'Blues': [0, 3, 5, 6, 7, 10],
+    'Whole Tone': [0, 2, 4, 6, 8, 10],
+  };
 
   constructor() {
     this.initAudioContext();
@@ -42,8 +52,13 @@ export class QuantumAudioEngine {
       this.analyserNode = this.audioContext.createAnalyser();
       this.analyserNode.fftSize = 2048;
       
+      // Create master volume node
+      this.masterVolumeNode = this.audioContext.createGain();
+      this.masterVolumeNode.gain.value = 0.7; // Default master volume
+      
       // Create audio graph
-      this.gainNode.connect(this.analyserNode);
+      this.gainNode.connect(this.masterVolumeNode);
+      this.masterVolumeNode.connect(this.analyserNode);
       this.analyserNode.connect(this.audioContext.destination);
 
       // Create impulse response for reverb
@@ -128,6 +143,64 @@ export class QuantumAudioEngine {
     return this.qpixlData;
   }
 
+  public setAdvancedAudioSettings(settings: AdvancedAudioSettings): void {
+    this.advancedSettings = settings;
+    
+    // Update master volume immediately
+    if (this.masterVolumeNode && settings.masterVolume !== undefined) {
+      this.masterVolumeNode.gain.value = settings.masterVolume;
+    }
+  }
+
+  public getAdvancedAudioSettings(): AdvancedAudioSettings | null {
+    return this.advancedSettings;
+  }
+
+  // Helper function to convert MIDI note to frequency
+  private midiToFreq(midiNote: number): number {
+    return 440 * Math.pow(2, (midiNote - 69) / 12);
+  }
+
+  // Helper for musical scale mapping
+  private mapQPIXLToNote(qpixlValue: number, scaleType: string, rootNote: number, octaveRange: number): number {
+    // Handle microtonal scales
+    if (scaleType.includes('Microtonal')) {
+      if (scaleType === 'Microtonal QPIXL (Octave Segmented)') {
+        // Map 0-1 to 0-12 semitones within a single octave, then repeat for multiple octaves
+        const fractionalPart = qpixlValue - Math.floor(qpixlValue);
+        const semitones = fractionalPart * 12;
+        return this.midiToFreq(rootNote + semitones);
+      } else {
+        // Map 0-1 to a wider continuous frequency range across multiple octaves
+        const octaveShift = (qpixlValue * octaveRange) - (octaveRange / 2);
+        return this.midiToFreq(rootNote) * Math.pow(2, octaveShift);
+      }
+    }
+    
+    // Handle standard scales
+    const scale = this.musicalScales[scaleType] || this.musicalScales['Chromatic'];
+    const scaleLength = scale.length;
+    const scaleIndex = Math.min(Math.floor(qpixlValue * scaleLength), scaleLength - 1);
+    const octaveOffset = Math.floor(qpixlValue * 3) - 1; // -1 to +1 octaves
+    return this.midiToFreq(rootNote + scale[scaleIndex] + (octaveOffset * 12));
+  }
+
+  private getQPIXLValue(qpixlArray: Float32Array | null, method: string, index = 0): number {
+    if (!qpixlArray || qpixlArray.length === 0) return 0.5;
+    
+    switch(method) {
+      case 'First QPIXL Value':
+        return qpixlArray[0] || 0.5;
+      case 'Average QPIXL Value':
+        return qpixlArray.reduce((sum, val) => sum + val, 0) / qpixlArray.length;
+      case 'Random QPIXL Value':
+        return qpixlArray[Math.floor(Math.random() * qpixlArray.length)] || 0.5;
+      default:
+        // Use specific index
+        return qpixlArray[index % qpixlArray.length] || 0.5;
+    }
+  }
+
   public async generateQuantumSound(settings: QuantumSettings): Promise<QuantumAudioState> {
     if (!this.audioContext) {
       throw new Error("Audio context not initialized");
@@ -172,8 +245,11 @@ export class QuantumAudioEngine {
     } else {
       this.qpixlData = null;
     }
+
+    // Use advanced audio settings if available
+    const useAdvancedSettings = this.advancedSettings !== null;
     
-    // Generate audio data based on quantum parameters
+    // Generate audio data based on quantum parameters and advanced settings
     for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
       const channelData = buffer.getChannelData(channel);
       
@@ -182,81 +258,155 @@ export class QuantumAudioEngine {
         const time = i / sampleRate;
         let sample = 0;
         
-        // Base frequency modulated by quantum parameters
-        const baseFreq = 220 + (settings.superposition * 2);
+        // Base frequency modulated by quantum parameters or musical scale
+        let baseFreq = 220 + (settings.superposition * 2);
         
-        // Waveform selection
-        switch (settings.waveform) {
-          case "sine":
-            sample = Math.sin(2 * Math.PI * baseFreq * time);
-            break;
-          case "square":
-            sample = Math.sign(Math.sin(2 * Math.PI * baseFreq * time));
-            break;
-          case "triangle":
-            sample = 2 * Math.abs(2 * (time * baseFreq - Math.floor(time * baseFreq + 0.5))) - 1;
-            break;
-          case "sawtooth":
-            sample = 2 * (time * baseFreq - Math.floor(time * baseFreq));
-            break;
-          case "quantumNoise":
-            // Quantum noise modulated by superposition and entanglement
-            const qFactor = settings.superposition / 100;
-            const eFactor = settings.entanglement / 100;
-            const noise = Math.random() * 2 - 1;
-            const quantumSine = Math.sin(2 * Math.PI * baseFreq * time);
-            sample = (quantumSine * (1 - qFactor)) + (noise * qFactor * eFactor);
-            break;
+        // Apply musical scale mapping if enabled
+        if (useAdvancedSettings && this.advancedSettings?.enableMusicalScale) {
+          const qpixlValue = this.getQPIXLValue(
+            this.qpixlData, 
+            this.advancedSettings.qpixlNoteSelectionMethod,
+            i % (this.qpixlData?.length || 1)
+          );
+          
+          baseFreq = this.mapQPIXLToNote(
+            qpixlValue,
+            this.advancedSettings.scaleType,
+            this.advancedSettings.rootNote,
+            this.advancedSettings.microtonalOctaveRange
+          );
         }
         
-        // Apply QPIXL modulation if enabled
-        if (settings.qpixlIntegration && this.qpixlData) {
-          const pixelIndex = Math.floor((i / channelData.length) * this.qpixlData.length) % this.qpixlData.length;
-          const qpixlFactor = settings.temporalCoherence / 100;
+        // Apply additive synthesis if enabled
+        if (useAdvancedSettings && this.advancedSettings?.enableAdditive) {
+          const numPartials = this.advancedSettings.numPartials;
+          const harmonicControlMapping = this.advancedSettings.harmonicControlMapping;
+          const harmonicSpreadFactor = this.advancedSettings.harmonicSpreadFactor;
+          const harmonicProfile = this.advancedSettings.harmonicAmplitudeProfile;
           
-          // Apply different modulation based on spectral mapping mode
-          switch (settings.spectralMapping) {
-            case "freq_qubits":
-              // Frequency modulation
-              const freqMod = 1 + (this.qpixlData[pixelIndex] - 0.5) * qpixlFactor;
-              sample = Math.sin(2 * Math.PI * baseFreq * time * freqMod);
+          for (let h = 1; h <= numPartials; h++) {
+            // Pick a QPIXL value for this harmonic
+            const qpixlIndex = (i * h) % (this.qpixlData?.length || 1);
+            const qpx = this.qpixlData && this.qpixlData.length > 0 
+              ? this.qpixlData[qpixlIndex] 
+              : 0.5;
+            
+            let partialFreq = baseFreq * h;
+            let partialAmp = 0;
+            let partialPhase = 0;
+            
+            // Determine base amplitude based on profile
+            switch (harmonicProfile) {
+              case '1/h':
+                partialAmp = 1 / h;
+                break;
+              case 'Flat':
+                partialAmp = 1 / numPartials;
+                break;
+              case '1/h^2':
+                partialAmp = 1 / (h * h);
+                break;
+              case 'QPIXL-Shaped':
+                partialAmp = qpx / numPartials;
+                break;
+              default:
+                partialAmp = 1 / h; // Default to natural
+            }
+            
+            // Apply QPIXL data based on selected mapping
+            switch (harmonicControlMapping) {
+              case 'Amplitudes':
+                partialAmp *= (0.5 + 0.5 * qpx);
+                break;
+              case 'Frequencies':
+                partialFreq *= (1 + (qpx - 0.5) * harmonicSpreadFactor * h);
+                break;
+              case 'Phases':
+                partialPhase = qpx * Math.PI * 2;
+                break;
+            }
+            
+            sample += Math.sin(2 * Math.PI * partialFreq * time + partialPhase) * partialAmp;
+          }
+          
+          if (numPartials > 0) {
+            sample /= Math.sqrt(numPartials); // Normalization for additive synthesis
+          }
+        } else {
+          // Standard waveform generation if additive synthesis is disabled
+          // Waveform selection
+          switch (settings.waveform) {
+            case "sine":
+              sample = Math.sin(2 * Math.PI * baseFreq * time);
               break;
-            case "amp_phase":
-              // Amplitude and phase modulation
-              const phase = this.qpixlData[pixelIndex] * Math.PI * 2;
-              sample = sample * (0.5 + this.qpixlData[pixelIndex] * 0.5) + 
-                      Math.sin(2 * Math.PI * baseFreq * 1.5 * time + phase) * 0.3;
+            case "square":
+              sample = Math.sign(Math.sin(2 * Math.PI * baseFreq * time));
               break;
-            case "harm_ent":
-              // Harmonic entanglement
-              const harmIndex = (pixelIndex + 1) % this.qpixlData.length;
-              const harmFactor = this.qpixlData[harmIndex];
-              sample = sample * 0.7 + 
-                      Math.sin(2 * Math.PI * baseFreq * 2 * time) * 0.3 * harmFactor;
+            case "triangle":
+              sample = 2 * Math.abs(2 * (time * baseFreq - Math.floor(time * baseFreq + 0.5))) - 1;
               break;
-            case "qpixl_bi":
-              // Full bidirectional mapping
-              sample = this.qpixlData[pixelIndex] * 2 - 1;
-              
-              // Apply quantum harmony if enabled
-              if (settings.quantumHarmony) {
-                const harmonicIndexes = [
-                  pixelIndex,
-                  (pixelIndex + this.qpixlData.length / 3) % this.qpixlData.length,
-                  (pixelIndex + this.qpixlData.length * 2 / 3) % this.qpixlData.length
-                ];
+            case "sawtooth":
+              sample = 2 * (time * baseFreq - Math.floor(time * baseFreq));
+              break;
+            case "quantumNoise":
+              // Quantum noise modulated by superposition and entanglement
+              const qFactor = settings.superposition / 100;
+              const eFactor = settings.entanglement / 100;
+              const noise = Math.random() * 2 - 1;
+              const quantumSine = Math.sin(2 * Math.PI * baseFreq * time);
+              sample = (quantumSine * (1 - qFactor)) + (noise * qFactor * eFactor);
+              break;
+          }
+          
+          // Apply QPIXL modulation if enabled
+          if (settings.qpixlIntegration && this.qpixlData) {
+            const pixelIndex = Math.floor((i / channelData.length) * this.qpixlData.length) % this.qpixlData.length;
+            const qpixlFactor = settings.temporalCoherence / 100;
+            
+            // Apply different modulation based on spectral mapping mode
+            switch (settings.spectralMapping) {
+              case "freq_qubits":
+                // Frequency modulation
+                const freqMod = 1 + (this.qpixlData[pixelIndex] - 0.5) * qpixlFactor;
+                sample = Math.sin(2 * Math.PI * baseFreq * time * freqMod);
+                break;
+              case "amp_phase":
+                // Amplitude and phase modulation
+                const phase = this.qpixlData[pixelIndex] * Math.PI * 2;
+                sample = sample * (0.5 + this.qpixlData[pixelIndex] * 0.5) + 
+                        Math.sin(2 * Math.PI * baseFreq * 1.5 * time + phase) * 0.3;
+                break;
+              case "harm_ent":
+                // Harmonic entanglement
+                const harmIndex = (pixelIndex + 1) % this.qpixlData.length;
+                const harmFactor = this.qpixlData[harmIndex];
+                sample = sample * 0.7 + 
+                        Math.sin(2 * Math.PI * baseFreq * 2 * time) * 0.3 * harmFactor;
+                break;
+              case "qpixl_bi":
+                // Full bidirectional mapping
+                sample = this.qpixlData[pixelIndex] * 2 - 1;
                 
-                sample = harmonicIndexes.reduce((acc, idx) => {
-                  return acc + (this.qpixlData![idx] * 2 - 1);
-                }, 0) / harmonicIndexes.length;
-              }
-              
-              // Apply compression if needed
-              if (settings.compressionThreshold > 0) {
-                const threshold = settings.compressionThreshold / 100;
-                sample = Math.tanh(sample * (1 + threshold * 2));
-              }
-              break;
+                // Apply quantum harmony if enabled
+                if (settings.quantumHarmony) {
+                  const harmonicIndexes = [
+                    pixelIndex,
+                    (pixelIndex + this.qpixlData.length / 3) % this.qpixlData.length,
+                    (pixelIndex + this.qpixlData.length * 2 / 3) % this.qpixlData.length
+                  ];
+                  
+                  sample = harmonicIndexes.reduce((acc, idx) => {
+                    return acc + (this.qpixlData![idx] * 2 - 1);
+                  }, 0) / harmonicIndexes.length;
+                }
+                
+                // Apply compression if needed
+                if (settings.compressionThreshold > 0) {
+                  const threshold = settings.compressionThreshold / 100;
+                  sample = Math.tanh(sample * (1 + threshold * 2));
+                }
+                break;
+            }
           }
         }
         
