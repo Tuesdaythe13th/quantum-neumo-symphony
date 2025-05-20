@@ -487,6 +487,59 @@ const Index = () => {
           </button>
         </div>
 
+        {/* Visualizer moved to the top */}
+        <div className="neumorph p-4 rounded-xl mb-6">
+          <div className="flex items-center mb-4">
+            <AudioWaveform className="h-5 w-5 text-quantum-accent mr-2" />
+            <h2 className="text-xl font-bold">Quantum Visualizer</h2>
+          </div>
+          
+          <div className="h-60 rounded-xl overflow-hidden">
+            <VisualAnalyzer 
+              type={visualizerType}
+              color="#9b87f5"
+              audioContext={audioContext}
+              analyserNode={analyserNode}
+              qpixlData={audioState?.qpixlData}
+              temporalCoherence={temporalCoherence}
+            />
+          </div>
+          
+          <div className="grid grid-cols-4 gap-2 mt-4">
+            <button 
+              className={`${visualizerType === 'waveform' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
+              onClick={() => setVisualizerType('waveform')}
+            >
+              <AudioWaveform className="h-4 w-4" />
+              <span className="hidden sm:inline">Waveform</span>
+            </button>
+            
+            <button 
+              className={`${visualizerType === 'frequency' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
+              onClick={() => setVisualizerType('frequency')}
+            >
+              <Volume2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Spectrum</span>
+            </button>
+            
+            <button 
+              className={`${visualizerType === 'quantum' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
+              onClick={() => setVisualizerType('quantum')}
+            >
+              <Atom className="h-4 w-4" />
+              <span className="hidden sm:inline">Quantum</span>
+            </button>
+            
+            <button 
+              className={`${visualizerType === 'qpixl' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
+              onClick={() => setVisualizerType('qpixl')}
+            >
+              <Grid className="h-4 w-4" />
+              <span className="hidden sm:inline">QPIXL</span>
+            </button>
+          </div>
+        </div>
+
         {/* Main Interface Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           {/* Control Panels */}
@@ -528,59 +581,24 @@ const Index = () => {
             )}
           </div>
 
-          {/* Visualizer + Matrix */}
+          {/* Matrix */}
           <div className="neumorph p-4 rounded-xl lg:col-span-2">
             <div className="flex items-center mb-4">
-              <AudioWaveform className="h-5 w-5 text-quantum-accent mr-2" />
-              <h2 className="text-xl font-bold">Quantum Visualizer</h2>
+              <Sliders className="h-5 w-5 text-quantum-accent mr-2" />
+              <h2 className="text-xl font-bold">Quantum Matrix</h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Main Visualizer */}
+              {/* Main Matrix Area */}
               <div className="md:col-span-2">
-                <div className="neumorph h-60 rounded-xl overflow-hidden">
-                  <VisualAnalyzer 
-                    type={visualizerType}
-                    color="#9b87f5"
-                    audioContext={audioContext}
-                    analyserNode={analyserNode}
-                    qpixlData={audioState?.qpixlData}
-                    temporalCoherence={temporalCoherence}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-4 gap-2 mt-4">
-                  <button 
-                    className={`${visualizerType === 'waveform' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
-                    onClick={() => setVisualizerType('waveform')}
-                  >
-                    <AudioWaveform className="h-4 w-4" />
-                    <span className="hidden sm:inline">Waveform</span>
-                  </button>
-                  
-                  <button 
-                    className={`${visualizerType === 'frequency' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
-                    onClick={() => setVisualizerType('frequency')}
-                  >
-                    <Volume2 className="h-4 w-4" />
-                    <span className="hidden sm:inline">Spectrum</span>
-                  </button>
-                  
-                  <button 
-                    className={`${visualizerType === 'quantum' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
-                    onClick={() => setVisualizerType('quantum')}
-                  >
-                    <Atom className="h-4 w-4" />
-                    <span className="hidden sm:inline">Quantum</span>
-                  </button>
-                  
-                  <button 
-                    className={`${visualizerType === 'qpixl' ? 'neumorph-active' : 'neumorph-button'} flex items-center justify-center gap-2 text-sm p-2`}
-                    onClick={() => setVisualizerType('qpixl')}
-                  >
-                    <Grid className="h-4 w-4" />
-                    <span className="hidden sm:inline">QPIXL</span>
-                  </button>
+                {/* Matrix content would go here */}
+                <div className="h-60 neumorph rounded-xl flex items-center justify-center">
+                  <div className="text-quantum-accent text-center">
+                    <div className="text-xl mb-2">Quantum Matrix Processor</div>
+                    <div className="text-sm text-quantum-muted">
+                      Generate quantum sound patterns with matrix operations
+                    </div>
+                  </div>
                 </div>
               </div>
               
