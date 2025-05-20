@@ -123,6 +123,14 @@ export class QuantumAudioEngine {
   public getQPIXLData(): Float32Array | null {
     return this.qpixlData;
   }
+  
+  /**
+   * Set external QPIXL data to be used for visualization and audio generation
+   * @param data Float32Array containing QPIXL data or null to clear existing data
+   */
+  public setQpixlData(data: Float32Array | null): void {
+    this.qpixlData = data;
+  }
 
   public setAdvancedAudioSettings(settings: AdvancedAudioSettings): void {
     this.advancedSettings = settings;
@@ -205,26 +213,27 @@ export class QuantumAudioEngine {
       sampleRate
     );
     
-    // Generate QPIXL data if enabled
+    // Generate QPIXL data if enabled and not already provided externally
     let spectralAnalysis = null;
     let compressionMetrics = null;
     
     if (settings.qpixlIntegration) {
-      // Generate quantum-pixel mapping
-      const pixelDimensions = Math.pow(2, Math.min(4, settings.qubits - 2)); // Keep reasonable size
-      this.qpixlData = this.generateQPIXLData(
-        pixelDimensions, 
-        settings.spectralMapping, 
-        settings.temporalCoherence / 100
-      );
+      // Only generate QPIXL data if not already provided externally
+      if (!this.qpixlData) {
+        // Generate quantum-pixel mapping
+        const pixelDimensions = Math.pow(2, Math.min(4, settings.qubits - 2)); // Keep reasonable size
+        this.qpixlData = this.generateQPIXLData(
+          pixelDimensions, 
+          settings.spectralMapping, 
+          settings.temporalCoherence / 100
+        );
+      }
       
       // If we're using QPIXL for audio generation, use it to modulate the audio
       if (settings.spectralMapping === "qpixl_bi") {
         spectralAnalysis = this.performSpectralAnalysis(duration, sampleRate);
         compressionMetrics = this.calculateCompressionMetrics(settings.compressionThreshold / 100);
       }
-    } else {
-      this.qpixlData = null;
     }
 
     // Use advanced audio settings if available
@@ -432,6 +441,7 @@ export class QuantumAudioEngine {
       quantumProbabilities: this.quantum_state,
       circuitData,
       qpixlData: this.qpixlData,
+      qpixlDataForEngine: this.qpixlData, // Add this so the engine output includes qpixlData for visualization
       spectralAnalysis,
       compressionMetrics
     };
