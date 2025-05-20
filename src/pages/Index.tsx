@@ -16,17 +16,6 @@ import { AdvancedAudioSettings, defaultSettings as defaultAdvancedSettings } fro
 import type { QuantumSettings } from "@/components/QuantumControls";
 import { QuantumAudioState } from "@/types/quantum";
 
-// Define the audio state type
-interface QuantumAudioState {
-  audioBuffer: AudioBuffer | null;
-  isPlaying: boolean;
-  currentTime: number;
-  duration: number;
-  quantumProbabilities: Record<string, number>;
-  circuitData: any;
-  qpixlData?: Float32Array;
-}
-
 const Index = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);

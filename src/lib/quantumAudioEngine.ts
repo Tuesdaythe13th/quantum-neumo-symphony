@@ -2,26 +2,6 @@ import { QuantumSettings } from "@/components/QuantumControls";
 import type { AdvancedAudioSettings } from "@/types/advancedAudioTypes";
 import { QuantumAudioState, SpectralAnalysisData, CompressionMetricsData } from "@/types/quantum";
 
-export interface QuantumAudioState {
-  audioBuffer: AudioBuffer | null;
-  isPlaying: boolean;
-  currentTime: number;
-  duration: number;
-  quantumProbabilities: Record<string, number>;
-  circuitData: any;
-  qpixlData?: Float32Array | null;
-  spectralAnalysis?: {
-    frequencies: Float32Array;
-    amplitudes: Float32Array;
-    harmonicRatios: number[];
-  } | null;
-  compressionMetrics?: {
-    originalComplexity: number;
-    compressedComplexity: number;
-    compressionRatio: number;
-  } | null;
-}
-
 export class QuantumAudioEngine {
   private audioContext: AudioContext | null = null;
   private gainNode: GainNode | null = null;
