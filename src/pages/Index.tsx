@@ -38,6 +38,7 @@ const Index = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastSettingsRef = useRef<QuantumSettings | null>(null);
   const lastAdvancedSettingsRef = useRef<AdvancedAudioSettings | null>(null);
+  const prevQpixlIntegrationRef = useRef<boolean | undefined>(undefined);
 
   // Initialize audio context on user interaction
   const initAudio = () => {
@@ -256,6 +257,21 @@ const Index = () => {
   // Add new useEffect to update visualization on quantum settings change
   useEffect(() => {
     if (quantumSettings) {
+      // Check if qpixlIntegration has changed
+      if (prevQpixlIntegrationRef.current !== undefined && 
+          quantumSettings.qpixlIntegration !== prevQpixlIntegrationRef.current) {
+        if (quantumSettings.qpixlIntegration) {
+          toast.info("QPIXL Integration Enabled! Select the 'QPIXL' visualizer type to see the effect.", {
+            duration: 5000, // Keep the toast visible for a bit longer
+          });
+        } else {
+          toast.info("QPIXL Integration Disabled.");
+        }
+      }
+      
+      // Update previous qpixlIntegration value
+      prevQpixlIntegrationRef.current = quantumSettings.qpixlIntegration;
+      
       lastSettingsRef.current = quantumSettings;
       updateVisualizationOnly(); // This updates visualizer immediately!
     }
@@ -619,6 +635,23 @@ const Index = () => {
               <Grid className="h-4 w-4" />
               <span className="hidden sm:inline">QPIXL</span>
             </button>
+          </div>
+          {/* QPIXL Status Indicator */}
+          <div className="mt-2 text-center">
+            {(() => {
+              if (visualizerType === 'qpixl') {
+                if (pythonOutput.qpixlStateArray && pythonOutput.qpixlStateArray.length > 0) {
+                  return <span className="text-xs font-medium text-green-400">Status: QPIXL Data Loaded</span>;
+                } else {
+                  return <span className="text-xs font-medium text-yellow-400">Status: QPIXL Active - No Data</span>;
+                }
+              } else {
+                if (quantumSettings && !quantumSettings.qpixlIntegration) {
+                  return <span className="text-xs font-medium text-gray-500">Status: QPIXL Integration Disabled</span>;
+                }
+                return <span className="text-xs font-medium text-gray-500">Status: QPIXL Inactive</span>;
+              }
+            })()}
           </div>
         </div>
 
