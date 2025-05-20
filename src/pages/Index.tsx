@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { Toaster } from "sonner";
 import { 
   Atom, Radio, Sliders, AudioWaveform, Play, 
-  Volume2, Upload, Grid, Download
+  Volume2, Upload, Grid, Download, HelpCircle // Added HelpCircle
 } from "lucide-react";
 
+import Walkthrough from '@/components/Walkthrough'; // Added Walkthrough import
 // import QuantumControls from "@/components/QuantumControls"; // Removed
 import VisualAnalyzer from "@/components/VisualAnalyzer";
 import QuantumPad from "@/components/QuantumPad";
@@ -43,6 +44,7 @@ const initialQuantumSettings: QuantumSettings = {
 };
 
 const Index = () => {
+  const [showWalkthrough, setShowWalkthrough] = useState(false); // Added state for walkthrough
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
@@ -638,7 +640,7 @@ const Index = () => {
       {/* Main DAW Interface */}
       <div className="neumorph p-4 rounded-xl"> {/* Reduced padding for main container */}
         {/* Row 1: Transport Controls */}
-        <div className="flex justify-between items-center mb-4"> {/* Reduced mb */}
+        <div className="flex justify-between items-center mb-4 daw-transport-section"> {/* Reduced mb, ADDED .daw-transport-section */}
           <DAWTransport
             onPlay={handlePlay}
             onStop={handleStop}
@@ -663,6 +665,14 @@ const Index = () => {
             >
               <Download className="h-4 w-4" /> {/* Reduced icon size */}
             </button>
+            {/* Walkthrough Trigger Button */}
+            <button
+              onClick={() => setShowWalkthrough(true)}
+              className="neumorph-button p-2.5 rounded-full ml-2 text-purple-400 hover:text-purple-300"
+              title="Show interface guide"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
           </div>
         </div>
 
@@ -672,7 +682,7 @@ const Index = () => {
           {/* Column 1: Core Controls & Matrix (lg:col-span-1) */}
           <div className="lg:col-span-1 space-y-3">
             {/* Core Quantum Parameters */}
-            <div className="neumorph p-3 rounded-xl">
+            <div className="neumorph p-3 rounded-xl quantum-knobs-section"> {/* ADDED .quantum-knobs-section */}
               <div className="flex items-center gap-2 mb-2">
                 <Atom className="w-4 h-4 text-quantum-accent" />
                 <h3 className="text-sm font-medium">Core Synthesis</h3>
@@ -708,7 +718,7 @@ const Index = () => {
           {/* Column 2: Visualizer & Output (lg:col-span-2) */}
           <div className="lg:col-span-2 space-y-3">
             {/* Quantum Visualizer (Prominent) */}
-            <div className="neumorph p-3 rounded-xl h-[350px] lg:h-auto lg:flex-grow flex flex-col"> {/* Increased height, flex-grow */}
+            <div className="neumorph p-3 rounded-xl h-[350px] lg:h-auto lg:flex-grow flex flex-col visual-analyzer-section"> {/* Increased height, flex-grow, ADDED .visual-analyzer-section */}
               <div className="flex items-center gap-2 mb-2">
                 <AudioWaveform className="w-4 h-4 text-quantum-accent" />
                 <h3 className="text-sm font-medium">Quantum Visualizer</h3>
@@ -780,7 +790,7 @@ const Index = () => {
           <div className="lg:col-span-1 space-y-3">
             <Accordion type="multiple" defaultValue={["qpixl-controls", "effects-controls"]} className="w-full">
               {/* QPIXL Controls */}
-              <AccordionItem value="qpixl-controls">
+              <AccordionItem value="qpixl-controls" className="qpixl-toggle-section"> {/* ADDED .qpixl-toggle-section */}
                 <AccordionTrigger className="text-sm font-medium p-3 hover:no-underline">QPIXL Settings</AccordionTrigger>
                 <AccordionContent className="p-1 pt-0 space-y-3">
                   <div className="neumorph p-3 rounded-xl">
@@ -821,7 +831,7 @@ const Index = () => {
               </AccordionItem>
 
               {/* Advanced Audio Synthesis (already accordionized internally) */}
-              <AccordionItem value="advanced-audio">
+              <AccordionItem value="advanced-audio" className="advanced-audio-accordion"> {/* ADDED .advanced-audio-accordion */}
                  <AccordionTrigger className="text-sm font-medium p-3 hover:no-underline">Advanced Synthesis</AccordionTrigger>
                  <AccordionContent className="p-1 pt-0">
                     <QuantumAdvancedAudio onChange={handleAdvancedAudioChange} initialSettings={advancedAudioSettings} />
@@ -1100,6 +1110,13 @@ const Index = () => {
       <footer className="mt-8 text-center text-quantum-muted text-sm">
         <p>Quantum Music Synthesizer - Made with ❤️ and quantum superposition</p>
       </footer>
+
+      {/* Render Walkthrough Component */}
+      <Walkthrough 
+        isOpen={showWalkthrough} 
+        onClose={() => setShowWalkthrough(false)}
+        position="top" 
+      />
     </div>
   );
 };
