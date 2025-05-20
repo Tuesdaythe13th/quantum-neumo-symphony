@@ -83,6 +83,43 @@ const Index = () => {
     return { qpixlStateValues, mockPythonAnalysis };
   };
 
+  // Add new function to update visualization only without full audio generation
+  const updateVisualizationOnly = async () => {
+    if (!quantumSettings) return;
+    
+    try {
+      // Generate QPIXL data immediately when controls change
+      const quantumState = await quantumAudioEngine.generateQuantumSound(quantumSettings);
+      
+      if (quantumState.qpixlData) {
+        // Update python output with new QPIXL data
+        setPythonOutput(prev => ({
+          ...prev,
+          qpixlStateArray: quantumState.qpixlData
+        }));
+        
+        // Update visualizer mode
+        if (quantumSettings.qpixlIntegration) {
+          setVisualizerType("qpixl");
+          setTemporalCoherence(quantumSettings.temporalCoherence);
+        } else {
+          setVisualizerType("quantum");
+        }
+      }
+    } catch (error) {
+      console.log("Visualization update failed, using mock data");
+      // Fallback to mock data for visualization
+      const mockQpixlData = new Float32Array(16);
+      for (let i = 0; i < 16; i++) {
+        mockQpixlData[i] = Math.random() * quantumSettings.superposition / 100;
+      }
+      setPythonOutput(prev => ({
+        ...prev,
+        qpixlStateArray: mockQpixlData
+      }));
+    }
+  };
+
   // Full generation pipeline combining Python and JS engines
   const triggerFullGenerationPipeline = async () => {
     if (!quantumSettings) {
@@ -215,6 +252,14 @@ const Index = () => {
     setCurrentTime("00:00");
     toast.info("Synthesis stopped");
   };
+
+  // Add new useEffect to update visualization on quantum settings change
+  useEffect(() => {
+    if (quantumSettings) {
+      lastSettingsRef.current = quantumSettings;
+      updateVisualizationOnly(); // This updates visualizer immediately!
+    }
+  }, [quantumSettings]);
 
   // Effect to regenerate audio when settings change while playing
   useEffect(() => {
